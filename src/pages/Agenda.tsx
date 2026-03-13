@@ -395,7 +395,7 @@ export default function Agenda() {
             .toString()
             .padStart(2, '0')}:${(occ.start % 60).toString().padStart(2, '0')}`,
           duration: formatDuration(duration),
-          type: duration >= 120 ? 'Focus Time' : 'Meeting Slot',
+          type: duration >= 120 ? 'Tempo de Foco' : 'Horário Disponível',
         })
       }
       current = Math.max(current, occ.end)
@@ -413,7 +413,7 @@ export default function Agenda() {
           .toString()
           .padStart(2, '0')}:${(businessEnd % 60).toString().padStart(2, '0')}`,
         duration: formatDuration(duration),
-        type: duration >= 120 ? 'Focus Time' : 'Meeting Slot',
+        type: duration >= 120 ? 'Tempo de Foco' : 'Horário Disponível',
       })
     }
 
@@ -847,9 +847,9 @@ export default function Agenda() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <Badge
-                        variant={slot.type === 'Focus Time' ? 'default' : 'outline'}
+                        variant={slot.type === 'Tempo de Foco' ? 'default' : 'outline'}
                         className={
-                          slot.type === 'Focus Time'
+                          slot.type === 'Tempo de Foco'
                             ? 'bg-primary/20 text-primary hover:bg-primary/30'
                             : 'border-muted-foreground/30'
                         }

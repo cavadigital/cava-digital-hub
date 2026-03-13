@@ -45,8 +45,16 @@ export function useGoogleAuth() {
           'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
         callback: async (response: any) => {
           if (response.error) {
+            let errorDesc = 'O acesso foi negado ou ocorreu um problema de configuração.'
+            if (response.error === 'invalid_client') {
+              errorDesc =
+                'Erro 401: O Client ID configurado não é válido ou as URLs atuais não estão autorizadas no Google Cloud Console.'
+            } else if (response.error === 'access_denied') {
+              errorDesc = 'A solicitação de acesso foi cancelada ou negada pelo usuário.'
+            }
+
             toast.error(`Erro de Autorização: ${response.error}`, {
-              description: 'O acesso foi negado ou ocorreu um problema de configuração.',
+              description: errorDesc,
             })
             setIsAuthLoading(false)
             return
@@ -77,7 +85,9 @@ export function useGoogleAuth() {
         },
         error_callback: (error: any) => {
           if (error.type !== 'popup_closed') {
-            toast.error('Erro no popup do Google: ' + error.type)
+            toast.error('Erro na conexão com o Google', {
+              description: `Ocorreu um problema com o popup de autenticação (${error.type}). Verifique se os popups estão permitidos.`,
+            })
           }
           setIsAuthLoading(false)
         },
