@@ -103,7 +103,18 @@ export type Meeting = {
   guests?: string
 }
 
+export type CurrentUser = {
+  name: string
+  email: string
+  role: string
+  phone: string
+  contract: string
+  avatarUrl: string
+}
+
 interface AppContextType {
+  currentUser: CurrentUser
+  updateCurrentUser: (data: Partial<CurrentUser>) => void
   prompts: Prompt[]
   addPrompt: (p: Omit<Prompt, 'id'>) => void
   clients: Client[]
@@ -151,6 +162,15 @@ interface AppContextType {
   toggleGoogleConnection: () => void
   meetingToConvert: Meeting | null
   setMeetingToConvert: (m: Meeting | null) => void
+}
+
+const defaultCurrentUser: CurrentUser = {
+  name: 'Admin CAVA',
+  email: 'admin@cavadigital.com.br',
+  role: 'Gestor de Operações',
+  phone: '+55 41 99999-9999',
+  contract: 'CLT',
+  avatarUrl: 'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=admin',
 }
 
 const defaultClients: Client[] = [
@@ -231,6 +251,7 @@ const defaultNotificationSettings: NotificationSettings = {
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const [currentUser, setCurrentUser] = useState<CurrentUser>(defaultCurrentUser)
   const [prompts, setPrompts] = useState<Prompt[]>(defaultPrompts)
   const [clients, setClients] = useState<Client[]>(defaultClients)
   const [uiComponents, setUiComponents] = useState<UIComponent[]>(defaultUIComponents)
@@ -405,6 +426,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     return () => clearInterval(interval)
   }, [meetings, notifiedWa, promptedConv])
+
+  const updateCurrentUser = (data: Partial<CurrentUser>) => {
+    setCurrentUser((prev) => ({ ...prev, ...data }))
+  }
 
   const toggleGoogleConnection = () => {
     setIsGoogleConnected((prev) => {
@@ -642,6 +667,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider
       value={{
+        currentUser,
+        updateCurrentUser,
         prompts,
         addPrompt,
         clients,

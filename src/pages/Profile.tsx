@@ -1,11 +1,19 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useAppContext } from '@/components/AppContext'
-import { BarChart3, List, Calendar as CalendarIcon, Clock } from 'lucide-react'
+import { BarChart3, List, Calendar as CalendarIcon, Clock, Edit } from 'lucide-react'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts'
 import {
@@ -20,12 +28,26 @@ import { MOCK_HOURS_PER_PROJECT_WEEK, MOCK_HOURS_PER_PROJECT_MONTH } from '@/lib
 import { toast } from 'sonner'
 
 export default function Profile() {
-  const { myTimeLogs, attendanceState, requestTimeLogApproval, weeklyGoal, getEffectiveGoal } =
-    useAppContext()
+  const {
+    myTimeLogs,
+    attendanceState,
+    requestTimeLogApproval,
+    weeklyGoal,
+    getEffectiveGoal,
+    currentUser,
+    updateCurrentUser,
+  } = useAppContext()
   const [timeView, setTimeView] = useState<'week' | 'month'>('week')
 
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+
+  const [isEditing, setIsEditing] = useState(false)
+  const [formData, setFormData] = useState(currentUser)
+
+  useEffect(() => {
+    setFormData(currentUser)
+  }, [currentUser])
 
   const chartData = timeView === 'week' ? MOCK_HOURS_PER_PROJECT_WEEK : MOCK_HOURS_PER_PROJECT_MONTH
   const totalHours = chartData.reduce((acc, curr) => acc + curr.hours, 0)
@@ -40,20 +62,29 @@ export default function Profile() {
     return true
   })
 
+  const handleSaveProfile = () => {
+    updateCurrentUser(formData)
+    setIsEditing(false)
+    toast.success('Perfil atualizado com sucesso!')
+  }
+
+  const handleCancelProfile = () => {
+    setFormData(currentUser)
+    setIsEditing(false)
+  }
+
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl mx-auto pb-12">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-6">
         <div className="flex items-center gap-4">
           <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl overflow-hidden shadow-sm border border-primary/20 shrink-0">
-            <img
-              src="https://img.usecurling.com/ppl/thumbnail?gender=male&seed=admin"
-              alt="Avatar"
-              className="w-full h-full object-cover"
-            />
+            <img src={currentUser.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Admin CAVA</h1>
-            <p className="text-muted-foreground">Administrador de Sistema • Gestor</p>
+            <h1 className="text-3xl font-bold tracking-tight">{currentUser.name}</h1>
+            <p className="text-muted-foreground">
+              {currentUser.role} • {currentUser.contract}
+            </p>
           </div>
         </div>
         <Badge
@@ -74,7 +105,7 @@ export default function Profile() {
         </Badge>
       </div>
 
-      <Tabs defaultValue="productivity" className="w-full">
+      <Tabs defaultValue="general" className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2 h-12 mb-6">
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="productivity">Produtividade & Logs</TabsTrigger>
@@ -82,30 +113,103 @@ export default function Profile() {
 
         <TabsContent value="general" className="space-y-6">
           <Card className="shadow-subtle">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between pb-4">
               <CardTitle>Informações Pessoais</CardTitle>
+              {!isEditing && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                  className="h-8"
+                >
+                  <Edit className="w-4 h-4 mr-2" /> Editar
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
-              <div className="grid sm:grid-cols-2 gap-6 text-sm">
-                <div>
-                  <span className="font-medium text-muted-foreground block mb-1">
-                    Email Corporativo
-                  </span>
-                  <span className="font-semibold">admin@cavadigital.com.br</span>
+              {isEditing ? (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Nome</Label>
+                      <Input
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Email Corporativo</Label>
+                      <Input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Cargo</Label>
+                      <Input
+                        value={formData.role}
+                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Telefone</Label>
+                      <Input
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Contrato</Label>
+                      <Select
+                        value={formData.contract}
+                        onValueChange={(val) => setFormData({ ...formData, contract: val })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="CLT">CLT</SelectItem>
+                          <SelectItem value="PJ">PJ</SelectItem>
+                          <SelectItem value="Estágio">Estágio</SelectItem>
+                          <SelectItem value="Freelancer">Freelancer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button variant="outline" onClick={handleCancelProfile}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleSaveProfile}>Salvar</Button>
+                  </div>
                 </div>
-                <div>
-                  <span className="font-medium text-muted-foreground block mb-1">Cargo</span>
-                  <span className="font-semibold">Gestor de Operações</span>
+              ) : (
+                <div className="grid sm:grid-cols-2 gap-6 text-sm">
+                  <div>
+                    <span className="font-medium text-muted-foreground block mb-1">Nome</span>
+                    <span className="font-semibold">{currentUser.name}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-muted-foreground block mb-1">
+                      Email Corporativo
+                    </span>
+                    <span className="font-semibold">{currentUser.email}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-muted-foreground block mb-1">Cargo</span>
+                    <span className="font-semibold">{currentUser.role}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-muted-foreground block mb-1">Telefone</span>
+                    <span className="font-semibold">{currentUser.phone}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-muted-foreground block mb-1">Contrato</span>
+                    <span className="font-semibold">{currentUser.contract}</span>
+                  </div>
                 </div>
-                <div>
-                  <span className="font-medium text-muted-foreground block mb-1">Telefone</span>
-                  <span className="font-semibold">+55 41 99999-9999</span>
-                </div>
-                <div>
-                  <span className="font-medium text-muted-foreground block mb-1">Contrato</span>
-                  <span className="font-semibold">CLT</span>
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
