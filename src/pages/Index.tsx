@@ -59,6 +59,7 @@ export default function Index() {
     setAttendanceRecord,
     weeklyGoal,
     setWeeklyGoal,
+    getEffectiveGoal,
   } = useAppContext()
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false)
   const [isGoalOpen, setIsGoalOpen] = useState(false)
@@ -117,8 +118,9 @@ export default function Index() {
     })
   }
 
+  const effectiveGoal = getEffectiveGoal(weeklyGoal, 'week')
   const userActualHours = 32 // Mock real progress integration
-  const progressValue = Math.min((userActualHours / weeklyGoal) * 100, 100)
+  const progressValue = Math.min((userActualHours / effectiveGoal) * 100, 100)
   const progressColor = progressValue >= 100 ? 'bg-success' : 'bg-primary'
 
   return (
@@ -190,7 +192,7 @@ export default function Index() {
           <CardContent>
             <div className="flex justify-between text-sm mb-2">
               <span className="text-muted-foreground">{userActualHours}h realizadas</span>
-              <span className="font-semibold">{weeklyGoal}h meta</span>
+              <span className="font-semibold">{effectiveGoal}h meta</span>
             </div>
             <Progress value={progressValue} indicatorColor={progressColor} className="h-2" />
             {progressValue >= 100 && (
@@ -367,7 +369,7 @@ export default function Index() {
           </DialogHeader>
           <div className="py-4">
             <Label htmlFor="goal" className="mb-2 block">
-              Meta de Horas (Semanal)
+              Meta de Horas (Semanal Base)
             </Label>
             <Input
               id="goal"

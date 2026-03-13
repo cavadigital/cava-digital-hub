@@ -18,6 +18,9 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Calendar } from '@/components/ui/calendar'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useBranch } from '@/components/BranchContext'
 import { MOCK_EMPLOYEES } from '@/lib/data'
 import { UserPlus, Clock, Download, FileText, CheckCircle2, XCircle } from 'lucide-react'
@@ -26,8 +29,19 @@ import { toast } from 'sonner'
 
 export default function HR() {
   const { currentBranch } = useBranch()
-  const { teamLogs, reviewTeamLog } = useAppContext()
+  const {
+    teamLogs,
+    reviewTeamLog,
+    holidays,
+    addHoliday,
+    removeHoliday,
+    managementLogs,
+    getEffectiveGoal,
+  } = useAppContext()
   const [selectedEmp, setSelectedEmp] = useState<any>(null)
+
+  const [newHolidayDate, setNewHolidayDate] = useState<Date | undefined>(undefined)
+  const [newHolidayDesc, setNewHolidayDesc] = useState('')
 
   const employees = MOCK_EMPLOYEES.filter(
     (e) => currentBranch === 'Consolidado' || e.branch === currentBranch,
@@ -64,6 +78,15 @@ export default function HR() {
     }, 500)
   }
 
+  const handleAddHoliday = () => {
+    if (newHolidayDate && newHolidayDesc) {
+      addHoliday(newHolidayDate.toISOString(), newHolidayDesc)
+      setNewHolidayDate(undefined)
+      setNewHolidayDesc('')
+      toast.success('Feriado adicionado', { description: 'A meta de horas será recalculada.' })
+    }
+  }
+
   return (
     <>
       <div className="space-y-6 animate-fade-in print:hidden max-w-6xl mx-auto">
@@ -80,15 +103,17 @@ export default function HR() {
         </div>
 
         <Tabs defaultValue="painel" className="w-full">
-          <TabsList className="grid w-full max-w-2xl grid-cols-3 mb-6">
-            <TabsTrigger value="painel">Painel de Produtividade</TabsTrigger>
+          <TabsList className="grid w-full lg:grid-cols-5 md:grid-cols-3 grid-cols-2 h-auto gap-1 mb-6 p-1 bg-muted/50 rounded-lg">
+            <TabsTrigger value="painel">Painel</TabsTrigger>
             <TabsTrigger value="aprovacoes" className="relative">
-              Aprovações de Ponto
+              Aprovações
               {teamLogs.filter((l) => l.status === 'Pendente').length > 0 && (
                 <span className="absolute top-1 right-2 h-2 w-2 rounded-full bg-destructive animate-pulse" />
               )}
             </TabsTrigger>
-            <TabsTrigger value="relatorios">Folha & Relatórios</TabsTrigger>
+            <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
+            <TabsTrigger value="feriados">Feriados</TabsTrigger>
+            <TabsTrigger value="historico">Histórico de Gestão</TabsTrigger>
           </TabsList>
 
           <TabsContent value="painel" className="space-y-6">
@@ -113,7 +138,8 @@ export default function HR() {
                   </TableHeader>
                   <TableBody>
                     {employees.map((emp) => {
-                      const balance = (emp.workedHours || 0) - (emp.weeklyGoal || 40)
+                      const effectiveGoal = getEffectiveGoal(emp.weeklyGoal || 40, 'week')
+                      const balance = (emp.workedHours || 0) - effectiveGoal
                       return (
                         <TableRow key={emp.id} className="hover:bg-muted/50 transition-colors">
                           <TableCell className="font-medium">
@@ -301,6 +327,137 @@ export default function HR() {
                         </TableCell>
                       </TableRow>
                     ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="feriados" className="space-y-6 animate-fade-in-up">
+            <div className="grid md:grid-cols-3 gap-6">
+              <Card className="shadow-subtle md:col-span-1">
+                <CardHeader>
+                  <CardTitle>Adicionar Feriado</CardTitle>
+                  <CardDescription>
+                    Defina dias não úteis para ajuste automático da meta.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Data</Label>
+                    <div className="flex justify-center border rounded-md p-2 bg-background">
+                      <Calendar
+                        mode="single"
+                        selected={newHolidayDate}
+                        onSelect={setNewHolidayDate}
+                        className="mx-auto"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Descrição</Label>
+                    <Input
+                      placeholder="Ex: Feriado Nacional"
+                      value={newHolidayDesc}
+                      onChange={(e) => setNewHolidayDesc(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    className="w-full"
+                    onClick={handleAddHoliday}
+                    disabled={!newHolidayDate || !newHolidayDesc}
+                  >
+                    Registrar Feriado
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-subtle md:col-span-2">
+                <CardHeader>
+                  <CardTitle>Feriados e Recessos Registrados</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Descrição</TableHead>
+                        <TableHead className="text-right">Ação</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {holidays.map((h) => (
+                        <TableRow key={h.id}>
+                          <TableCell>{new Date(h.date).toLocaleDateString('pt-BR')}</TableCell>
+                          <TableCell>{h.description}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:bg-destructive/10"
+                              onClick={() => removeHoliday(h.id)}
+                            >
+                              Remover
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {holidays.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center text-muted-foreground h-24">
+                            Nenhum feriado registrado.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="historico" className="space-y-6 animate-fade-in-up">
+            <Card className="shadow-subtle">
+              <CardHeader>
+                <CardTitle>Histórico de Gestão</CardTitle>
+                <CardDescription>
+                  Trilha de auditoria para todas as ações administrativas e alterações de ponto.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data/Hora</TableHead>
+                      <TableHead>Gestor</TableHead>
+                      <TableHead>Colaborador</TableHead>
+                      <TableHead>Ação</TableHead>
+                      <TableHead>Detalhes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {managementLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell className="font-mono text-xs text-muted-foreground">
+                          {log.timestamp}
+                        </TableCell>
+                        <TableCell className="font-medium">{log.manager}</TableCell>
+                        <TableCell>{log.employee}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{log.action}</Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-xs">
+                          {log.details}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {managementLogs.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
+                          Nenhum registro encontrado no histórico.
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>

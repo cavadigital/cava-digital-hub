@@ -75,6 +75,21 @@ export type TeamLog = {
   status: TimeLogStatus
 }
 
+export type Holiday = {
+  id: string
+  date: string
+  description: string
+}
+
+export type ManagementLog = {
+  id: string
+  timestamp: string
+  manager: string
+  employee: string
+  action: string
+  details: string
+}
+
 interface AppContextType {
   prompts: Prompt[]
   addPrompt: (p: Omit<Prompt, 'id'>) => void
@@ -109,6 +124,11 @@ interface AppContextType {
   reviewTeamLog: (id: string, newStatus: 'Aprovado' | 'Rejeitado') => void
   weeklyGoal: number
   setWeeklyGoal: (goal: number) => void
+  holidays: Holiday[]
+  addHoliday: (date: string, description: string) => void
+  removeHoliday: (id: string) => void
+  managementLogs: ManagementLog[]
+  getEffectiveGoal: (baseGoal: number, type: 'week' | 'month') => number
 }
 
 const defaultClients: Client[] = [
@@ -232,6 +252,89 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const [weeklyGoal, setWeeklyGoal] = useState<number>(40)
 
+  const [holidays, setHolidays] = useState<Holiday[]>([])
+  const [managementLogs, setManagementLogs] = useState<ManagementLog[]>([
+    {
+      id: 'ml1',
+      timestamp: new Date(Date.now() - 86400000).toLocaleString('pt-BR'),
+      manager: 'Admin CAVA',
+      employee: 'Ana Silva',
+      action: 'Ponto Aprovado',
+      details:
+        'Data: ' + new Date(Date.now() - 86400000).toLocaleDateString('pt-BR') + ' | Horas: 8h 10m',
+    },
+  ])
+
+  const addHoliday = (date: string, description: string) => {
+    const d = new Date(date)
+    setHolidays((prev) => [
+      ...prev,
+      { id: Math.random().toString(36).substr(2, 9), date, description },
+    ])
+    setManagementLogs((prev) => [
+      {
+        id: Math.random().toString(36).substr(2, 9),
+        timestamp: new Date().toLocaleString('pt-BR'),
+        manager: 'Admin CAVA',
+        employee: 'Todos',
+        action: 'Adição de Feriado',
+        details: `Data: ${d.toLocaleDateString('pt-BR')} - ${description}`,
+      },
+      ...prev,
+    ])
+  }
+
+  const removeHoliday = (id: string) => {
+    const h = holidays.find((x) => x.id === id)
+    if (h) {
+      setManagementLogs((prev) => [
+        {
+          id: Math.random().toString(36).substr(2, 9),
+          timestamp: new Date().toLocaleString('pt-BR'),
+          manager: 'Admin CAVA',
+          employee: 'Todos',
+          action: 'Remoção de Feriado',
+          details: `Data: ${new Date(h.date).toLocaleDateString('pt-BR')} - ${h.description}`,
+        },
+        ...prev,
+      ])
+    }
+    setHolidays((prev) => prev.filter((x) => x.id !== id))
+  }
+
+  const getEffectiveGoal = (baseGoal: number, type: 'week' | 'month') => {
+    const now = new Date()
+    let daysToSubtract = 0
+
+    if (type === 'week') {
+      const start = new Date(now)
+      start.setDate(now.getDate() - now.getDay())
+      start.setHours(0, 0, 0, 0)
+
+      const end = new Date(start)
+      end.setDate(start.getDate() + 6)
+      end.setHours(23, 59, 59, 999)
+
+      daysToSubtract = holidays.filter((h) => {
+        const d = new Date(h.date)
+        return d >= start && d <= end
+      }).length
+    } else {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1)
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      end.setHours(23, 59, 59, 999)
+
+      daysToSubtract = holidays.filter((h) => {
+        const d = new Date(h.date)
+        return d >= start && d <= end
+      }).length
+    }
+
+    const totalSubtracted = daysToSubtract * 8
+    const calculatedGoal = (type === 'week' ? baseGoal : baseGoal * 4) - totalSubtracted
+    return calculatedGoal > 0 ? calculatedGoal : 0
+  }
+
   const setAttendanceRecord = (
     newState: 'idle' | 'working' | 'paused',
     actionName: string,
@@ -272,6 +375,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   const reviewTeamLog = (id: string, newStatus: 'Aprovado' | 'Rejeitado') => {
+    const log = teamLogs.find((l) => l.id === id)
+    if (log) {
+      const now = new Date()
+      setManagementLogs((prev) => [
+        {
+          id: Math.random().toString(36).substr(2, 9),
+          timestamp: now.toLocaleString('pt-BR'),
+          manager: 'Admin CAVA',
+          employee: log.empName,
+          action: `Ponto ${newStatus}`,
+          details: `Data: ${log.date} | Horas: ${log.hours}`,
+        },
+        ...prev,
+      ])
+    }
+
     setTeamLogs((prev) => prev.map((l) => (l.id === id ? { ...l, status: newStatus } : l)))
     setMyTimeLogs((prev) => prev.map((l) => (l.id === id ? { ...l, status: newStatus } : l)))
   }
@@ -361,6 +480,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         reviewTeamLog,
         weeklyGoal,
         setWeeklyGoal,
+        holidays,
+        addHoliday,
+        removeHoliday,
+        managementLogs,
+        getEffectiveGoal,
       }}
     >
       {children}

@@ -20,7 +20,8 @@ import { MOCK_HOURS_PER_PROJECT_WEEK, MOCK_HOURS_PER_PROJECT_MONTH } from '@/lib
 import { toast } from 'sonner'
 
 export default function Profile() {
-  const { myTimeLogs, attendanceState, requestTimeLogApproval, weeklyGoal } = useAppContext()
+  const { myTimeLogs, attendanceState, requestTimeLogApproval, weeklyGoal, getEffectiveGoal } =
+    useAppContext()
   const [timeView, setTimeView] = useState<'week' | 'month'>('week')
 
   const [startDate, setStartDate] = useState('')
@@ -29,7 +30,7 @@ export default function Profile() {
   const chartData = timeView === 'week' ? MOCK_HOURS_PER_PROJECT_WEEK : MOCK_HOURS_PER_PROJECT_MONTH
   const totalHours = chartData.reduce((acc, curr) => acc + curr.hours, 0)
 
-  const currentGoal = timeView === 'week' ? weeklyGoal : weeklyGoal * 4
+  const currentGoal = getEffectiveGoal(weeklyGoal, timeView)
   const balance = totalHours - currentGoal
   const balanceColor =
     balance > 0 ? 'text-success' : balance < 0 ? 'text-destructive' : 'text-foreground'
