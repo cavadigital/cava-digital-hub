@@ -5,6 +5,8 @@ export const MOCK_PROJECTS = [
     client: 'Lojas Renner',
     status: 'Em Design',
     branch: 'Curitiba',
+    estimatedHours: 120,
+    actualHours: 85,
   },
   {
     id: '2',
@@ -12,6 +14,8 @@ export const MOCK_PROJECTS = [
     client: 'Boutique Z',
     status: 'Desenvolvimento',
     branch: 'Blumenau',
+    estimatedHours: 80,
+    actualHours: 95, // Exceeded
   },
   {
     id: '3',
@@ -19,6 +23,8 @@ export const MOCK_PROJECTS = [
     client: 'TechStore',
     status: 'Backlog',
     branch: 'Consolidado',
+    estimatedHours: 40,
+    actualHours: 10,
   },
   {
     id: '4',
@@ -26,6 +32,8 @@ export const MOCK_PROJECTS = [
     client: 'Moda Praia',
     status: 'Aprovação Cliente',
     branch: 'Curitiba',
+    estimatedHours: 60,
+    actualHours: 58,
   },
   {
     id: '5',
@@ -33,6 +41,8 @@ export const MOCK_PROJECTS = [
     client: 'AutoPeças 10',
     status: 'Finalizado',
     branch: 'Blumenau',
+    estimatedHours: 30,
+    actualHours: 25,
   },
 ]
 
@@ -92,9 +102,27 @@ export const MOCK_EMPLOYEES = [
     status: 'Em Atividade',
     attendanceScore: 98,
     recentLogs: [
-      { date: 'Hoje', entry: '08:50', exit: '-', hours: 'Em andamento' },
-      { date: 'Ontem', entry: '09:00', exit: '18:00', hours: '8h 00m' },
-      { date: '2 dias atrás', entry: '08:55', exit: '18:10', hours: '8h 15m' },
+      {
+        date: '2023-11-01',
+        entry: '08:50',
+        exit: '18:00',
+        hours: '8h 10m',
+        project: 'Implantação Wake',
+      },
+      {
+        date: '2023-10-31',
+        entry: '09:00',
+        exit: '18:00',
+        hours: '8h 00m',
+        project: 'Implantação Wake',
+      },
+      {
+        date: '2023-10-30',
+        entry: '08:55',
+        exit: '18:10',
+        hours: '8h 15m',
+        project: 'Migração Tray',
+      },
     ],
   },
   {
@@ -108,8 +136,20 @@ export const MOCK_EMPLOYEES = [
     status: 'Offline',
     attendanceScore: 85,
     recentLogs: [
-      { date: 'Hoje', entry: '10:00', exit: '16:00', hours: '6h 00m' },
-      { date: 'Ontem', entry: '09:30', exit: '18:30', hours: '8h 00m' },
+      {
+        date: '2023-11-01',
+        entry: '10:00',
+        exit: '16:00',
+        hours: '6h 00m',
+        project: 'Migração Tray',
+      },
+      {
+        date: '2023-10-31',
+        entry: '09:30',
+        exit: '18:30',
+        hours: '8h 00m',
+        project: 'Migração Tray',
+      },
     ],
   },
   {
@@ -122,8 +162,20 @@ export const MOCK_EMPLOYEES = [
     status: 'Em Pausa',
     attendanceScore: 92,
     recentLogs: [
-      { date: 'Hoje', entry: '09:00', exit: '-', hours: 'Pausa (Almoço)' },
-      { date: 'Ontem', entry: '08:45', exit: '18:00', hours: '8h 15m' },
+      {
+        date: '2023-11-01',
+        entry: '09:00',
+        exit: '12:00',
+        hours: '3h 00m',
+        project: 'Campanha Black Friday',
+      },
+      {
+        date: '2023-10-31',
+        entry: '08:45',
+        exit: '18:00',
+        hours: '8h 15m',
+        project: 'Nova Home Nuvemshop',
+      },
     ],
   },
 ]

@@ -51,6 +51,8 @@ export type Project = {
   status: string
   branch: string
   description?: string
+  estimatedHours?: number
+  actualHours?: number
 }
 
 export type TimeLog = {
@@ -90,6 +92,8 @@ interface AppContextType {
     actionName: string,
     project?: string,
   ) => void
+  weeklyGoal: number
+  setWeeklyGoal: (goal: number) => void
 }
 
 const defaultClients: Client[] = [
@@ -189,6 +193,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       project: '-',
     },
   ])
+
+  const [weeklyGoal, setWeeklyGoal] = useState<number>(40)
 
   const setAttendanceRecord = (
     newState: 'idle' | 'working' | 'paused',
@@ -290,6 +296,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         lastEntry,
         myTimeLogs,
         setAttendanceRecord,
+        weeklyGoal,
+        setWeeklyGoal,
       }}
     >
       {children}

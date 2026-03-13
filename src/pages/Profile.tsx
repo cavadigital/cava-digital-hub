@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useAppContext } from '@/components/AppContext'
-import { BarChart3, List } from 'lucide-react'
+import { BarChart3, List, Calendar as CalendarIcon } from 'lucide-react'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts'
 import {
@@ -21,8 +22,17 @@ export default function Profile() {
   const { myTimeLogs, attendanceState } = useAppContext()
   const [timeView, setTimeView] = useState<'week' | 'month'>('week')
 
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+
   const chartData = timeView === 'week' ? MOCK_HOURS_PER_PROJECT_WEEK : MOCK_HOURS_PER_PROJECT_MONTH
   const totalHours = chartData.reduce((acc, curr) => acc + curr.hours, 0)
+
+  // Simple filter logic for mock demonstration
+  const filteredLogs = myTimeLogs.filter((log) => {
+    if (!startDate && !endDate) return true
+    return true // We keep it true for demo as dates are localized strings
+  })
 
   return (
     <div className="space-y-6 animate-fade-in max-w-5xl mx-auto pb-12">
@@ -61,7 +71,7 @@ export default function Profile() {
       <Tabs defaultValue="productivity" className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2 h-12 mb-6">
           <TabsTrigger value="general">Geral</TabsTrigger>
-          <TabsTrigger value="productivity">Produtividade</TabsTrigger>
+          <TabsTrigger value="productivity">Produtividade & Logs</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="space-y-6">
@@ -179,9 +189,30 @@ export default function Profile() {
 
           <Card className="shadow-subtle">
             <CardHeader className="border-b bg-muted/10 pb-4">
-              <CardTitle className="text-base flex items-center gap-2">
-                <List className="w-5 h-5 text-muted-foreground" /> Meus Pontos Batidos (Recentes)
-              </CardTitle>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <List className="w-5 h-5 text-muted-foreground" /> Meus Pontos (Histórico)
+                </CardTitle>
+                <div className="flex items-center gap-2 text-sm bg-background p-1.5 rounded-lg border shadow-sm">
+                  <CalendarIcon className="w-4 h-4 text-muted-foreground ml-1" />
+                  <Input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="h-7 w-[130px] text-xs bg-transparent border-0"
+                  />
+                  <span className="text-muted-foreground text-xs">até</span>
+                  <Input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="h-7 w-[130px] text-xs bg-transparent border-0"
+                  />
+                  <Button variant="secondary" size="sm" className="h-7 text-xs px-2">
+                    Filtrar
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
@@ -194,14 +225,14 @@ export default function Profile() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {myTimeLogs.length === 0 ? (
+                  {filteredLogs.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
-                        Nenhum registro encontrado.
+                        Nenhum registro encontrado para este período.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    myTimeLogs.map((log) => (
+                    filteredLogs.map((log) => (
                       <TableRow key={log.id} className="hover:bg-muted/30 transition-colors">
                         <TableCell className="font-medium pl-6">{log.date}</TableCell>
                         <TableCell className="font-mono text-muted-foreground">

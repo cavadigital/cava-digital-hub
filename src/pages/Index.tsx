@@ -13,6 +13,7 @@ import {
   LogOut,
   Play,
   AlarmClock,
+  Settings2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useBranch } from '@/components/BranchContext'
@@ -35,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Progress } from '@/components/ui/progress'
 import { toast } from 'sonner'
 
 const chartData = [
@@ -48,9 +50,18 @@ const chartData = [
 
 export default function Index() {
   const { currentBranch } = useBranch()
-  const { projects, clients, addProject, attendanceState, lastEntry, setAttendanceRecord } =
-    useAppContext()
+  const {
+    projects,
+    clients,
+    addProject,
+    attendanceState,
+    lastEntry,
+    setAttendanceRecord,
+    weeklyGoal,
+    setWeeklyGoal,
+  } = useAppContext()
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false)
+  const [isGoalOpen, setIsGoalOpen] = useState(false)
   const [newProject, setNewProject] = useState({ title: '', client: '', description: '' })
 
   const activeProjects = projects.filter(
@@ -105,6 +116,10 @@ export default function Index() {
       duration: 10000,
     })
   }
+
+  const userActualHours = 32 // Mock real progress integration
+  const progressValue = Math.min((userActualHours / weeklyGoal) * 100, 100)
+  const progressColor = progressValue >= 100 ? 'bg-success' : 'bg-primary'
 
   return (
     <div className="space-y-8 animate-fade-in-up">
@@ -163,7 +178,27 @@ export default function Index() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-4">
+        <Card className="shadow-subtle hover:shadow-elevation transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Metas de Produtividade</CardTitle>
+            <Settings2
+              className="h-4 w-4 text-muted-foreground cursor-pointer"
+              onClick={() => setIsGoalOpen(true)}
+            />
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-muted-foreground">{userActualHours}h realizadas</span>
+              <span className="font-semibold">{weeklyGoal}h meta</span>
+            </div>
+            <Progress value={progressValue} indicatorColor={progressColor} className="h-2" />
+            {progressValue >= 100 && (
+              <p className="text-[10px] text-success font-semibold mt-2">Meta semanal atingida!</p>
+            )}
+          </CardContent>
+        </Card>
+
         <Card className="shadow-subtle hover:shadow-elevation transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Fluxo de Caixa Mensal</CardTitle>
@@ -180,7 +215,7 @@ export default function Index() {
                 <ArrowUpRight className="h-3 w-3 mr-1" />
                 +12.5%
               </span>{' '}
-              em relação ao mês anterior
+              vs mês anterior
             </p>
           </CardContent>
         </Card>
@@ -321,6 +356,38 @@ export default function Index() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={isGoalOpen} onOpenChange={setIsGoalOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Configurar Metas de Produtividade</DialogTitle>
+            <DialogDescription>
+              Defina a quantidade de horas semanais a serem alcançadas.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="goal" className="mb-2 block">
+              Meta de Horas (Semanal)
+            </Label>
+            <Input
+              id="goal"
+              type="number"
+              value={weeklyGoal}
+              onChange={(e) => setWeeklyGoal(Number(e.target.value))}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setIsGoalOpen(false)
+                toast.success('Meta atualizada com sucesso.')
+              }}
+            >
+              Salvar Meta
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isNewProjectOpen} onOpenChange={setIsNewProjectOpen}>
         <DialogContent className="sm:max-w-[425px]">

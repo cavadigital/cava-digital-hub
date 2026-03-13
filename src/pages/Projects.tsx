@@ -11,9 +11,18 @@ import {
 } from '@/components/ui/sheet'
 import { useBranch } from '@/components/BranchContext'
 import { useAppContext } from '@/components/AppContext'
-import { Plus, MessageSquare, Paperclip, MoreHorizontal, Clock, Share2 } from 'lucide-react'
+import {
+  Plus,
+  MessageSquare,
+  Paperclip,
+  MoreHorizontal,
+  Clock,
+  Share2,
+  AlertCircle,
+} from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Progress } from '@/components/ui/progress'
 import { toast } from 'sonner'
 
 const COLUMNS = [
@@ -160,6 +169,34 @@ export default function Projects() {
               </SheetHeader>
 
               <div className="space-y-6">
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold">Comparativo de Performance</h4>
+                  <div className="flex flex-col gap-3 bg-muted/40 p-4 rounded-xl border border-border/60">
+                    <div className="flex justify-between items-center text-sm font-medium">
+                      <span>Estimado: {activeCard.estimatedHours || 0}h</span>
+                      <span>Realizado: {activeCard.actualHours || 0}h</span>
+                    </div>
+                    <Progress
+                      value={Math.min(
+                        ((activeCard.actualHours || 0) / (activeCard.estimatedHours || 1)) * 100,
+                        100,
+                      )}
+                      indicatorColor={
+                        (activeCard.actualHours || 0) > (activeCard.estimatedHours || 0)
+                          ? 'bg-destructive'
+                          : 'bg-success'
+                      }
+                      className="h-2"
+                    />
+                    {(activeCard.actualHours || 0) > (activeCard.estimatedHours || 0) && (
+                      <p className="text-xs text-destructive mt-1 font-semibold flex items-center">
+                        <AlertCircle className="w-3 h-3 mr-1" /> Projeto excedeu a estimativa de
+                        horas
+                      </p>
+                    )}
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <h4 className="text-sm font-semibold">Descrição (Oculto p/ Cliente)</h4>
                   <Textarea
