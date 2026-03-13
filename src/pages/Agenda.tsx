@@ -189,7 +189,11 @@ export default function Agenda() {
           new Promise((resolve, reject) => {
             setTimeout(() => {
               // 10% chance to fail randomly to simulate and fulfill the AC for sync errors
-              Math.random() > 0.9 ? reject(new Error('Google API Error')) : resolve(true)
+              if (Math.random() > 0.9) {
+                reject(new Error('Google API Error'))
+              } else {
+                resolve(true)
+              }
             }, 800)
           }),
           {
@@ -213,7 +217,11 @@ export default function Agenda() {
         toast.promise(
           new Promise((resolve, reject) => {
             setTimeout(() => {
-              Math.random() > 0.9 ? reject(new Error('Google API Error')) : resolve(true)
+              if (Math.random() > 0.9) {
+                reject(new Error('Google API Error'))
+              } else {
+                resolve(true)
+              }
             }, 800)
           }),
           {
