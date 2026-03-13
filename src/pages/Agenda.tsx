@@ -40,6 +40,12 @@ import { toast } from 'sonner'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { format } from 'date-fns'
 
+const formatDuration = (mins: number) => {
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  return `${h > 0 ? h + 'h ' : ''}${m > 0 ? m + 'm ' : ''}livre`.trim()
+}
+
 export default function Agenda() {
   const {
     meetings,
@@ -48,8 +54,7 @@ export default function Agenda() {
     addMeeting,
     updateMeeting,
     deleteMeeting,
-    projects,
-    addTimeLog,
+    setMeetingToConvert,
   } = useAppContext()
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
@@ -83,26 +88,28 @@ export default function Agenda() {
 
   const [isSyncing, setIsSyncing] = useState(false)
   const [isGoogleLoginOpen, setIsGoogleLoginOpen] = useState(false)
-  const [isAiSuggestionsOpen, setIsAiSuggestionsOpen] = useState(false)
+  const [googleLoginStep, setGoogleLoginStep] = useState<'choose' | 'email' | 'password'>('choose')
+  const [googleEmail, setGoogleEmail] = useState('')
+  const [googlePassword, setGooglePassword] = useState('')
 
-  const [meetingToConvert, setMeetingToConvert] = useState<Meeting | null>(null)
-  const [logTitle, setLogTitle] = useState('')
-  const [logDuration, setLogDuration] = useState('')
-  const [logProject, setLogProject] = useState('')
+  const [isAiSuggestionsOpen, setIsAiSuggestionsOpen] = useState(false)
 
   const handleOpenGoogleLogin = () => {
     if (isGoogleConnected) {
       toggleGoogleConnection()
       toast.info('Google Workspace desconectado.', {
-        description: 'Reuniões externas foram ocultadas.',
+        description: 'Reuniões sincronizadas foram ocultadas.',
       })
       if (activePreview?.source === 'google') setActivePreview(null)
     } else {
+      setGoogleLoginStep('choose')
+      setGoogleEmail('')
+      setGooglePassword('')
       setIsGoogleLoginOpen(true)
     }
   }
 
-  const handleGoogleAuth = () => {
+  const handleGoogleAuthFast = () => {
     setIsGoogleLoginOpen(false)
     setIsSyncing(true)
     setTimeout(() => {
@@ -112,6 +119,17 @@ export default function Agenda() {
         description: 'Sincronização bidirecional ativada com sucesso.',
       })
     }, 1200)
+  }
+
+  const handleGoogleAuthSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (googleLoginStep === 'email') {
+      if (!googleEmail) return toast.error('Insira o email')
+      setGoogleLoginStep('password')
+    } else if (googleLoginStep === 'password') {
+      if (!googlePassword) return toast.error('Insira a senha')
+      handleGoogleAuthFast()
+    }
   }
 
   const handleOpenCreate = () => {
@@ -165,7 +183,7 @@ export default function Agenda() {
     if (isEditing && formData.id) {
       updateMeeting(formData.id, meetingData)
       toast.success('Reunião atualizada com sucesso!', {
-        description: isGoogleConnected ? 'Sincronizado com Google Calendar.' : '',
+        description: isGoogleConnected ? 'Sincronizado bidirecionalmente com Google Calendar.' : '',
       })
       if (activePreview?.id === formData.id) {
         setActivePreview({ ...meetingData, id: formData.id } as Meeting)
@@ -173,7 +191,7 @@ export default function Agenda() {
     } else {
       addMeeting(meetingData)
       toast.success('Reunião agendada com sucesso!', {
-        description: isGoogleConnected ? 'Adicionado ao seu Google Calendar.' : '',
+        description: isGoogleConnected ? 'Sincronizado bidirecionalmente com Google Calendar.' : '',
       })
     }
 
@@ -192,7 +210,7 @@ export default function Agenda() {
 
   const handleSimulateWhatsApp = (meet: Meeting) => {
     toast.success('Lembrete Automático Enviado 🟢', {
-      description: `Mensagem WhatsApp: "Olá! Sua reunião '${meet.title}' começará em 15 minutos às ${meet.time}."`,
+      description: `Mensagem WhatsApp: "Olá! Sua reunião '${meet.title}' começará em breve às ${meet.time}."`,
       icon: (
         <img
           src="https://img.usecurling.com/i?q=whatsapp&color=green&shape=fill"
@@ -203,66 +221,62 @@ export default function Agenda() {
     })
   }
 
-  const calculateDuration = (start: string, end: string) => {
-    if (!start || !end) return '1h 00m'
-    const [sh, sm] = start.split(':').map(Number)
-    const [eh, em] = end.split(':').map(Number)
-    let diff = eh * 60 + em - (sh * 60 + sm)
-    if (diff <= 0) return '0h 00m'
-    const h = Math.floor(diff / 60)
-    const m = diff % 60
-    return `${h}h ${m.toString().padStart(2, '0')}m`
-  }
-
   const handleEndMeeting = (meet: Meeting) => {
     setMeetingToConvert(meet)
-    setLogTitle(meet.title)
-    setLogDuration(calculateDuration(meet.time, meet.endTime))
-    setLogProject('')
   }
 
-  const handleSaveTimeLog = () => {
-    if (!logProject) {
-      toast.error('Selecione um projeto para associar as horas.')
-      return
+  const aiFreeSlots = useMemo(() => {
+    if (!selectedDate) return []
+    const dateStr = selectedDate.toISOString().split('T')[0]
+    const dayMeetings = meetings
+      .filter((m) => m.date === dateStr)
+      .sort((a, b) => a.time.localeCompare(b.time))
+
+    const businessStart = 9 * 60
+    const businessEnd = 18 * 60
+
+    const occupied = dayMeetings.map((m) => {
+      const [sh, sm] = m.time.split(':').map(Number)
+      const [eh, em] = (m.endTime || '19:00').split(':').map(Number)
+      return { start: sh * 60 + sm, end: eh * 60 + em }
+    })
+
+    let current = businessStart
+    const slots = []
+
+    occupied.forEach((occ) => {
+      if (current + 30 <= occ.start) {
+        slots.push({
+          date: selectedDate,
+          dateLabel: format(selectedDate, 'dd/MM/yyyy'),
+          time: `${Math.floor(current / 60)
+            .toString()
+            .padStart(2, '0')}:${(current % 60).toString().padStart(2, '0')}`,
+          endTime: `${Math.floor(occ.start / 60)
+            .toString()
+            .padStart(2, '0')}:${(occ.start % 60).toString().padStart(2, '0')}`,
+          duration: formatDuration(occ.start - current),
+        })
+      }
+      current = Math.max(current, occ.end)
+    })
+
+    if (current + 30 <= businessEnd) {
+      slots.push({
+        date: selectedDate,
+        dateLabel: format(selectedDate, 'dd/MM/yyyy'),
+        time: `${Math.floor(current / 60)
+          .toString()
+          .padStart(2, '0')}:${(current % 60).toString().padStart(2, '0')}`,
+        endTime: `${Math.floor(businessEnd / 60)
+          .toString()
+          .padStart(2, '0')}:${(businessEnd % 60).toString().padStart(2, '0')}`,
+        duration: formatDuration(businessEnd - current),
+      })
     }
-    addTimeLog({
-      date: new Date().toLocaleDateString('pt-BR'),
-      time: logDuration,
-      type: 'Reunião',
-      project: logProject,
-      status: 'Rascunho',
-    })
-    setMeetingToConvert(null)
-    toast.success('Horas registradas com sucesso!', {
-      description: 'Acesse seu Perfil para solicitar aprovação.',
-    })
-  }
 
-  const mockFreeSlots = [
-    { date: new Date(), dateLabel: 'Hoje', time: '15:30', endTime: '16:30', duration: '1h' },
-    {
-      date: new Date(Date.now() + 86400000),
-      dateLabel: 'Amanhã',
-      time: '10:00',
-      endTime: '11:00',
-      duration: '1h',
-    },
-    {
-      date: new Date(Date.now() + 86400000),
-      dateLabel: 'Amanhã',
-      time: '14:30',
-      endTime: '16:00',
-      duration: '1h 30m',
-    },
-    {
-      date: new Date(Date.now() + 172800000),
-      dateLabel: 'Quinta-feira',
-      time: '09:00',
-      endTime: '10:00',
-      duration: '1h',
-    },
-  ]
+    return slots
+  }, [meetings, selectedDate])
 
   const handleSelectSlot = (slot: any) => {
     setIsAiSuggestionsOpen(false)
@@ -273,7 +287,7 @@ export default function Agenda() {
       time: slot.time,
       endTime: slot.endTime,
       type: 'Interna',
-      description: 'Reunião sugerida pela IA baseada na sua disponibilidade.',
+      description: 'Reunião sugerida pela IA baseada na sua disponibilidade de calendário.',
       guests: '',
     })
     setIsEditing(false)
@@ -678,35 +692,81 @@ export default function Agenda() {
               Conectar com Google Workspace
             </DialogTitle>
             <DialogDescription>
-              Selecione sua conta para permitir que o CAVA Digital acesse e sincronize seu Google
-              Calendar.
+              {googleLoginStep === 'choose' &&
+                'Selecione sua conta para permitir que o CAVA Digital acesse e sincronize seu Google Calendar.'}
+              {googleLoginStep === 'email' && 'Fazer login com sua Conta do Google para continuar.'}
+              {googleLoginStep === 'password' && `Bem-vindo, ${googleEmail}`}
             </DialogDescription>
           </DialogHeader>
-          <div className="py-6 flex flex-col gap-3">
-            <Button
-              variant="outline"
-              className="h-16 justify-start px-4 hover:bg-muted/50"
-              onClick={handleGoogleAuth}
-            >
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-4 text-primary font-bold text-lg shrink-0">
-                A
+
+          {googleLoginStep === 'choose' && (
+            <div className="py-6 flex flex-col gap-3">
+              <Button
+                variant="outline"
+                className="h-16 justify-start px-4 hover:bg-muted/50"
+                onClick={handleGoogleAuthFast}
+              >
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-4 text-primary font-bold text-lg shrink-0">
+                  A
+                </div>
+                <div className="text-left flex-1 overflow-hidden">
+                  <p className="font-semibold text-sm truncate">Admin CAVA</p>
+                  <p className="text-xs text-muted-foreground truncate">admin@cavadigital.com.br</p>
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-16 justify-start px-4 hover:bg-muted/50"
+                onClick={() => setGoogleLoginStep('email')}
+              >
+                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mr-4 shrink-0">
+                  <Users className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <span className="font-medium text-sm">Usar outra conta</span>
+              </Button>
+            </div>
+          )}
+
+          {googleLoginStep === 'email' && (
+            <form onSubmit={handleGoogleAuthSubmit} className="py-4 space-y-4">
+              <div className="space-y-2">
+                <Label>Email ou telefone</Label>
+                <Input
+                  autoFocus
+                  type="email"
+                  value={googleEmail}
+                  onChange={(e) => setGoogleEmail(e.target.value)}
+                  placeholder="Email corporativo"
+                />
               </div>
-              <div className="text-left flex-1 overflow-hidden">
-                <p className="font-semibold text-sm truncate">Admin CAVA</p>
-                <p className="text-xs text-muted-foreground truncate">admin@cavadigital.com.br</p>
+              <div className="flex justify-between items-center pt-2">
+                <Button variant="ghost" type="button" onClick={() => setGoogleLoginStep('choose')}>
+                  Voltar
+                </Button>
+                <Button type="submit">Avançar</Button>
               </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-16 justify-start px-4 hover:bg-muted/50"
-              onClick={handleGoogleAuth}
-            >
-              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mr-4 shrink-0">
-                <Users className="w-5 h-5 text-muted-foreground" />
+            </form>
+          )}
+
+          {googleLoginStep === 'password' && (
+            <form onSubmit={handleGoogleAuthSubmit} className="py-4 space-y-4">
+              <div className="space-y-2">
+                <Label>Digite sua senha</Label>
+                <Input
+                  autoFocus
+                  type="password"
+                  value={googlePassword}
+                  onChange={(e) => setGooglePassword(e.target.value)}
+                />
               </div>
-              <span className="font-medium text-sm">Usar outra conta</span>
-            </Button>
-          </div>
+              <div className="flex justify-between items-center pt-2">
+                <Button variant="ghost" type="button" onClick={() => setGoogleLoginStep('email')}>
+                  Voltar
+                </Button>
+                <Button type="submit">Autenticar</Button>
+              </div>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -717,85 +777,38 @@ export default function Agenda() {
               <Sparkles className="w-5 h-5 text-primary" /> Sugestões de Horários (IA)
             </DialogTitle>
             <DialogDescription>
-              Nossa inteligência analisou sua agenda e encontrou os melhores slots de tempo livre
-              para agendar novos compromissos.
+              Nossa inteligência analisou seu calendário e encontrou os melhores slots de tempo
+              livre para novos compromissos.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-3 max-h-[300px] overflow-y-auto pr-2">
-            {mockFreeSlots.map((slot, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/40 transition-colors"
-              >
-                <div>
-                  <p className="font-medium text-sm text-foreground flex items-center">
-                    <CalendarIcon className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />{' '}
-                    {slot.dateLabel}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5 ml-5">
-                    {slot.time} - {slot.endTime}{' '}
-                    <span className="opacity-70 ml-1">({slot.duration})</span>
-                  </p>
+            {aiFreeSlots.length === 0 ? (
+              <p className="text-center text-muted-foreground text-sm py-6">
+                Nenhum horário livre encontrado na data selecionada.
+              </p>
+            ) : (
+              aiFreeSlots.map((slot, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/40 transition-colors"
+                >
+                  <div>
+                    <p className="font-medium text-sm text-foreground flex items-center">
+                      <CalendarIcon className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />{' '}
+                      {slot.dateLabel}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5 ml-5">
+                      {slot.time} - {slot.endTime}{' '}
+                      <span className="opacity-70 ml-1">({slot.duration})</span>
+                    </p>
+                  </div>
+                  <Button size="sm" variant="secondary" onClick={() => handleSelectSlot(slot)}>
+                    Selecionar
+                  </Button>
                 </div>
-                <Button size="sm" variant="secondary" onClick={() => handleSelectSlot(slot)}>
-                  Selecionar
-                </Button>
-              </div>
-            ))}
+              ))
+            )}
           </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!meetingToConvert} onOpenChange={(open) => !open && setMeetingToConvert(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-primary" /> Converter em Registro de Horas
-            </DialogTitle>
-            <DialogDescription>
-              Deseja converter o tempo gasto nesta reunião em um registro de horas faturáveis para
-              um projeto?
-            </DialogDescription>
-          </DialogHeader>
-          {meetingToConvert && (
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label>Título da Atividade</Label>
-                <Input value={logTitle} onChange={(e) => setLogTitle(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label>Tempo Calculado</Label>
-                <Input value={logDuration} readOnly className="bg-muted font-mono" />
-                <p className="text-[10px] text-muted-foreground">
-                  Extraído automaticamente do convite da reunião ({meetingToConvert.time} às{' '}
-                  {meetingToConvert.endTime}).
-                </p>
-              </div>
-              <div className="grid gap-2">
-                <Label>
-                  Projeto Associado <span className="text-destructive">*</span>
-                </Label>
-                <Select value={logProject} onValueChange={setLogProject}>
-                  <SelectTrigger className="bg-background">
-                    <SelectValue placeholder="Selecione um projeto para apontamento" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.map((p) => (
-                      <SelectItem key={p.id} value={p.title}>
-                        {p.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setMeetingToConvert(null)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSaveTimeLog}>Salvar Registro de Horas</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

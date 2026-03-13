@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react'
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react'
 import { MOCK_PROJECTS } from '@/lib/data'
+import { toast } from 'sonner'
 
 export type AssetStatus = 'Pending' | 'Approved' | 'Revision Requested'
 
@@ -148,6 +149,8 @@ interface AppContextType {
   deleteMeeting: (id: string) => void
   isGoogleConnected: boolean
   toggleGoogleConnection: () => void
+  meetingToConvert: Meeting | null
+  setMeetingToConvert: (m: Meeting | null) => void
 }
 
 const defaultClients: Client[] = [
@@ -285,9 +288,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
   ])
 
   const [isGoogleConnected, setIsGoogleConnected] = useState(false)
+  const [meetingToConvert, setMeetingToConvert] = useState<Meeting | null>(null)
+
+  const [notifiedWa, setNotifiedWa] = useState<Set<string>>(new Set())
+  const [promptedConv, setPromptedConv] = useState<Set<string>>(new Set())
+
   const [meetings, setMeetings] = useState<Meeting[]>(() => {
     const today = new Date().toISOString().split('T')[0]
+    const now = new Date()
+
+    const m1Time = new Date(now.getTime() - 30 * 60000).toTimeString().slice(0, 5)
+    const m1End = new Date(now.getTime() - 1 * 60000).toTimeString().slice(0, 5)
+
+    const m2Time = new Date(now.getTime() + 14 * 60000).toTimeString().slice(0, 5)
+    const m2End = new Date(now.getTime() + 44 * 60000).toTimeString().slice(0, 5)
+
     return [
+      {
+        id: 'debug-post-meeting',
+        date: today,
+        time: m1Time,
+        endTime: m1End,
+        title: 'Review Rápida (Test Time)',
+        type: 'Interna',
+        source: 'internal',
+        description:
+          'Mock de reunião recém-encerrada para testar o prompt de conversão automática.',
+      },
+      {
+        id: 'debug-wa-reminder',
+        date: today,
+        time: m2Time,
+        endTime: m2End,
+        title: 'Call de Alinhamento (Test WA)',
+        type: 'Reunião Externa',
+        source: 'internal',
+        description: 'Mock para testar lembrete de WhatsApp de 15 mins.',
+        guests: 'cliente@exemplo.com',
+      },
       {
         id: '1',
         date: today,
@@ -302,17 +340,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       {
         id: '2',
         date: today,
-        time: '11:30',
-        endTime: '12:15',
-        title: 'Sync de Performance - Lojas Renner',
-        type: 'Interna',
-        source: 'google',
-        description: 'Alinhamento de OKRs e melhoria da conversão no checkout mobile.',
-        guests: 'equipe@cavadigital.com.br',
-      },
-      {
-        id: '3',
-        date: today,
         time: '14:00',
         endTime: '15:00',
         title: 'Apresentação de Layout',
@@ -321,21 +348,80 @@ export function AppProvider({ children }: { children: ReactNode }) {
         description: 'Design do novo checkout para aprovação do stakeholder.',
         guests: 'aprovacao@cliente.com',
       },
-      {
-        id: '4',
-        date: today,
-        time: '16:00',
-        endTime: '17:00',
-        title: 'Entrevista Dev Front-end',
-        type: 'RH',
-        source: 'google',
-        description: 'Entrevista técnica com candidato.',
-        guests: 'candidato@email.com',
-      },
     ]
   })
 
-  const toggleGoogleConnection = () => setIsGoogleConnected((prev) => !prev)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date()
+      const todayStr = now.toISOString().split('T')[0]
+      const currentMs = now.getTime()
+
+      meetings.forEach((m) => {
+        if (m.date === todayStr) {
+          const [sh, sm] = m.time.split(':').map(Number)
+          const startMs = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+            sh,
+            sm,
+          ).getTime()
+
+          const [eh, em] = m.endTime ? m.endTime.split(':').map(Number) : [sh + 1, sm]
+          const endMs = new Date(now.getFullYear(), now.getMonth(), now.getDate(), eh, em).getTime()
+
+          const timeToStart = startMs - currentMs
+          if (timeToStart > 0 && timeToStart <= 15.5 * 60000 && !notifiedWa.has(m.id)) {
+            toast.success('Lembrete Automático Enviado 🟢', {
+              description: `Mensagem WhatsApp enviada: "Olá! Sua reunião '${m.title}' começará em breve às ${m.time}."`,
+            })
+            setNotifiedWa((prev) => new Set(prev).add(m.id))
+          }
+
+          const timeSinceEnd = currentMs - endMs
+          if (timeSinceEnd >= 0 && timeSinceEnd <= 5 * 60000 && !promptedConv.has(m.id)) {
+            toast('Reunião Encerrada', {
+              description: `Deseja converter o tempo da reunião "${m.title}" em um registro de horas?`,
+              action: {
+                label: 'Converter',
+                onClick: () => setMeetingToConvert(m),
+              },
+              duration: 10000,
+            })
+            setPromptedConv((prev) => new Set(prev).add(m.id))
+          }
+        }
+      })
+    }, 10000)
+
+    return () => clearInterval(interval)
+  }, [meetings, notifiedWa, promptedConv])
+
+  const toggleGoogleConnection = () => {
+    setIsGoogleConnected((prev) => {
+      const next = !prev
+      if (next) {
+        setMeetings((current) => [
+          ...current,
+          {
+            id: 'mock-google-1',
+            date: new Date().toISOString().split('T')[0],
+            time: '11:30',
+            endTime: '12:15',
+            title: 'Sync de Performance - Lojas Renner',
+            type: 'Interna',
+            source: 'google',
+            description: 'Evento sincronizado bidirecionalmente com o Google Calendar.',
+            guests: 'equipe@cavadigital.com.br',
+          },
+        ])
+      } else {
+        setMeetings((current) => current.filter((m) => m.id !== 'mock-google-1'))
+      }
+      return next
+    })
+  }
 
   const addMeeting = (m: Omit<Meeting, 'id'>) => {
     setMeetings((prev) => [...prev, { ...m, id: Math.random().toString(36).substring(2, 9) }])
@@ -580,6 +666,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         deleteMeeting,
         isGoogleConnected,
         toggleGoogleConnection,
+        meetingToConvert,
+        setMeetingToConvert,
       }}
     >
       {children}

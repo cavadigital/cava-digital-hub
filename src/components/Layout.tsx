@@ -32,9 +32,11 @@ import {
   BookOpen,
   User,
   TrendingUp,
+  Clock,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -51,7 +53,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useBranch } from './BranchContext'
+import { useAppContext } from './AppContext'
+import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 
 const navItems = [
   { title: 'Dashboard', icon: LayoutDashboard, url: '/' },
@@ -76,6 +89,44 @@ const externalItems = [
 export default function Layout() {
   const location = useLocation()
   const { currentBranch, setBranch } = useBranch()
+  const { meetingToConvert, setMeetingToConvert, projects, addTimeLog } = useAppContext()
+
+  const [logTitle, setLogTitle] = useState('')
+  const [logDuration, setLogDuration] = useState('')
+  const [logProject, setLogProject] = useState('')
+
+  useEffect(() => {
+    if (meetingToConvert) {
+      setLogTitle(meetingToConvert.title)
+
+      const [sh, sm] = meetingToConvert.time.split(':').map(Number)
+      const [eh, em] = meetingToConvert.endTime.split(':').map(Number)
+      let diff = eh * 60 + em - (sh * 60 + sm)
+      if (diff <= 0) diff = 60
+      const h = Math.floor(diff / 60)
+      const m = diff % 60
+      setLogDuration(`${h}h ${m.toString().padStart(2, '0')}m`)
+      setLogProject('')
+    }
+  }, [meetingToConvert])
+
+  const handleSaveTimeLog = () => {
+    if (!logProject) {
+      toast.error('Selecione um projeto para associar as horas.')
+      return
+    }
+    addTimeLog({
+      date: new Date().toLocaleDateString('pt-BR'),
+      time: logDuration,
+      type: 'Reunião',
+      project: logProject,
+      status: 'Rascunho',
+    })
+    setMeetingToConvert(null)
+    toast.success('Horas registradas com sucesso!', {
+      description: 'Acesse seu Perfil para solicitar aprovação.',
+    })
+  }
 
   return (
     <SidebarProvider>
@@ -204,6 +255,59 @@ export default function Layout() {
           </main>
         </SidebarInset>
       </div>
+
+      <Dialog open={!!meetingToConvert} onOpenChange={(open) => !open && setMeetingToConvert(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-primary" /> Converter em Registro de Horas
+            </DialogTitle>
+            <DialogDescription>
+              Deseja converter o tempo gasto nesta reunião em um registro de horas faturáveis para
+              um projeto?
+            </DialogDescription>
+          </DialogHeader>
+          {meetingToConvert && (
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label>Título da Atividade</Label>
+                <Input value={logTitle} onChange={(e) => setLogTitle(e.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label>Tempo Calculado</Label>
+                <Input value={logDuration} readOnly className="bg-muted font-mono" />
+                <p className="text-[10px] text-muted-foreground">
+                  Extraído automaticamente do convite da reunião ({meetingToConvert.time} às{' '}
+                  {meetingToConvert.endTime}).
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <Label>
+                  Projeto Associado <span className="text-destructive">*</span>
+                </Label>
+                <Select value={logProject} onValueChange={setLogProject}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Selecione um projeto para apontamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((p) => (
+                      <SelectItem key={p.id} value={p.title}>
+                        {p.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMeetingToConvert(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveTimeLog}>Salvar Registro de Horas</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   )
 }
