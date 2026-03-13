@@ -17,7 +17,7 @@ import {
   RefreshCw,
   MessageCircle,
 } from 'lucide-react'
-import { useAppContext, Meeting } from '@/components/AppContext'
+import { useAppContext, Meeting, CurrentUser } from '@/components/AppContext'
 import {
   Dialog,
   DialogContent,
@@ -64,6 +64,7 @@ export default function Agenda() {
     updateMeeting,
     deleteMeeting,
     setMeetingToConvert,
+    updateCurrentUser,
   } = useAppContext()
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
@@ -113,7 +114,14 @@ export default function Agenda() {
         },
       )
 
-      if (!res.ok) throw new Error('Failed to fetch events')
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          disconnectGoogle()
+          throw new Error('Sessão expirada. Por favor, reconecte sua conta do Google.')
+        }
+        throw new Error('Falha ao obter eventos do Google Calendar.')
+      }
+
       const data = await res.json()
 
       const mapped: Meeting[] = data.items
@@ -153,9 +161,9 @@ export default function Agenda() {
 
       updateGoogleMeetings(mapped)
       setIsSyncing(false)
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      toast.error('Erro ao sincronizar eventos do Google Calendar.')
+      toast.error(err.message || 'Erro ao sincronizar eventos do Google Calendar.')
       setIsSyncing(false)
     }
   }
@@ -185,7 +193,8 @@ export default function Agenda() {
 
     const client = window.google.accounts.oauth2.initTokenClient({
       client_id: clientId,
-      scope: 'https://www.googleapis.com/auth/calendar.events',
+      scope:
+        'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
       prompt: 'select_account',
       callback: (response: any) => {
         if (response.error !== undefined) {
@@ -194,8 +203,27 @@ export default function Agenda() {
         }
         connectGoogle(response.access_token)
         toast.success('Google Workspace conectado!', {
-          description: 'Sincronizando eventos...',
+          description: 'Sincronizando eventos e perfil...',
         })
+
+        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${response.access_token}` },
+        })
+          .then((res) => {
+            if (res.ok) return res.json()
+            throw new Error('Falha ao obter perfil do Google')
+          })
+          .then((data) => {
+            const updates: Partial<CurrentUser> = {}
+            if (data.name) updates.name = data.name
+            if (data.email) updates.email = data.email
+            if (data.picture) updates.avatarUrl = data.picture
+            if (Object.keys(updates).length > 0) {
+              updateCurrentUser(updates)
+            }
+          })
+          .catch((err) => console.error('Erro ao sincronizar perfil:', err))
+
         fetchGoogleEvents(response.access_token)
       },
     })
@@ -296,7 +324,13 @@ export default function Agenda() {
 
       toast.promise(
         apiCall.then(async (res) => {
-          if (!res.ok) throw new Error(await res.text())
+          if (!res.ok) {
+            if (res.status === 401 || res.status === 403) {
+              disconnectGoogle()
+              throw new Error('Sessão expirada ou limite de API excedido. Por favor, reconecte.')
+            }
+            throw new Error(await res.text())
+          }
           const data = await res.json()
           if (isUpdate) {
             updateMeeting(formData.id, meetingData)
@@ -308,7 +342,8 @@ export default function Agenda() {
         {
           loading: isUpdate ? 'Atualizando no Google Calendar...' : 'Criando no Google Calendar...',
           success: 'Sincronizado com sucesso com o Google Calendar!',
-          error: (err: any) => `Falha na Sincronização Google: ${err.message || 'Erro'}`,
+          error: (err: any) =>
+            `Falha na Sincronização Google: ${err.message || 'Erro. Verifique sua conexão.'}`,
         },
       )
     } else {
@@ -333,7 +368,13 @@ export default function Agenda() {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${googleToken}` },
         }).then(async (res) => {
-          if (!res.ok) throw new Error(await res.text())
+          if (!res.ok) {
+            if (res.status === 401 || res.status === 403) {
+              disconnectGoogle()
+              throw new Error('Sessão expirada. Por favor, reconecte sua conta.')
+            }
+            throw new Error(await res.text())
+          }
           deleteMeeting(id)
           if (activePreview?.id === id) setActivePreview(null)
           fetchGoogleEvents(googleToken)
@@ -341,7 +382,8 @@ export default function Agenda() {
         {
           loading: 'Removendo do Google Calendar...',
           success: 'Reunião removida com sucesso.',
-          error: 'Erro ao remover reunião no Google Calendar.',
+          error: (err: any) =>
+            `Erro ao remover reunião: ${err.message || 'Falha na comunicação com o Google.'}`,
         },
       )
       return
