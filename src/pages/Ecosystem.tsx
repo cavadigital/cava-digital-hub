@@ -11,88 +11,101 @@ import { Server, Zap, CheckCircle2 } from 'lucide-react'
 
 const ecoData = [
   {
-    category: 'Creative Studio',
-    feature: 'Horizontal Workspace',
+    category: 'Studio Criativo',
+    feature: 'Workspace Horizontal',
     description:
-      'Optimized layout for notebooks with tools at the top and visualizer at the bottom.',
+      'Layout otimizado para notebooks com ferramentas no topo e visualizador na parte inferior.',
   },
   {
-    category: 'Creative Studio',
-    feature: 'Custom Dimensions',
-    description: 'Support for standard presets and manual size input.',
+    category: 'Studio Criativo',
+    feature: 'Componentes Interativos',
+    description: 'Geração e exportação de código para botões animados e timers de escassez.',
   },
   {
-    category: 'Creative Studio',
-    feature: 'Real-time Style Editor',
-    description: 'Instant adjustment of colors and fonts without re-generating code.',
+    category: 'Studio Criativo',
+    feature: 'Dimensões Customizadas',
+    description: 'Suporte para presets padrão e entrada manual de tamanhos para ativos visuais.',
   },
   {
-    category: 'Creative Studio',
+    category: 'Studio Criativo',
+    feature: 'Editor de Estilo em Tempo Real',
+    description: 'Ajuste instantâneo de cores e fontes da marca sem re-gerar o código.',
+  },
+  {
+    category: 'Studio Criativo',
     feature: 'Smart Bundles',
-    description: 'Automatic combinations of Banners + CTAs + Modals based on goals.',
+    description:
+      'Combinações automáticas de Banners + CTAs + Modais baseados em objetivos de campanha.',
   },
   {
-    category: 'Creative Studio',
-    feature: 'A/B Testing',
-    description: 'Automatic generation of variation "B" for performance testing.',
+    category: 'Studio Criativo',
+    feature: 'Testes A/B',
+    description: 'Geração automática de variação "B" para testes de performance de anúncios.',
   },
   {
-    category: 'Creative Studio',
-    feature: 'Smart Copywriting',
-    description: 'AI-generated ad texts based on audience and offer.',
+    category: 'Copywriting IA',
+    feature: 'IA Multilíngue',
+    description:
+      'Geração inteligente de textos otimizados para anúncios em Português, Inglês e Espanhol.',
   },
 
   {
-    category: 'Governance & Tech',
+    category: 'Governança & Tech',
     feature: 'CAVA Review (Linter)',
-    description: 'Automated SEO and performance check for Wake, Tray, and Nuvemshop.',
+    description:
+      'Verificação automatizada de SEO e performance para plataformas Wake, Tray e Nuvemshop.',
   },
   {
-    category: 'Governance & Tech',
-    feature: 'Version Control',
-    description: "One-click Rollback to the last stable state of the client's store.",
-  },
-
-  {
-    category: 'Client & Results',
-    feature: 'Customer Portal',
-    description: 'Dedicated area for clients to view projects and active assets.',
-  },
-  {
-    category: 'Client & Results',
-    feature: 'Performance Analytics',
-    description: 'Integration of CPM, CTR, and CPC metrics to track ROI.',
-  },
-  {
-    category: 'Client & Results',
-    feature: 'Branding Library',
-    description: 'Saved "Identity Kits" (logos, colors, fonts) per client for instant application.',
-  },
-  {
-    category: 'Client & Results',
-    feature: 'WhatsApp Notifications',
-    description: 'Automated alerts with mobile approval links sent directly to clients.',
-  },
-  {
-    category: 'Client & Results',
-    feature: 'Automated PDF Reports',
-    description: 'Generate elegant, print-ready monthly performance summaries with one click.',
+    category: 'Governança & Tech',
+    feature: 'Controle de Versão',
+    description: 'Rollback em um clique para o último estado estável da loja do cliente.',
   },
 
   {
-    category: 'Automation',
-    feature: 'Ad Manager Sync',
-    description: 'Direct export of creatives to Meta Ads and Google Ads.',
+    category: 'Gestão de Clientes',
+    feature: 'Portal Transparente',
+    description: 'Área dedicada para clientes visualizarem projetos e ativos em veiculação.',
   },
   {
-    category: 'Automation',
-    feature: 'Mobile Approval',
-    description: 'Seamless feedback loop via mobile-optimized share links.',
+    category: 'Gestão de Clientes',
+    feature: 'Health Score Dashboard',
+    description:
+      'Indicador visual de saúde da conta baseado em métricas de performance (CPM, CTR, CPC).',
   },
   {
-    category: 'Automation',
-    feature: 'AI Budget Optimization',
-    description: 'Intelligent recommendations for budget reallocation across Meta and Google Ads.',
+    category: 'Gestão de Clientes',
+    feature: 'Biblioteca de Marcas',
+    description:
+      'Kits de identidade salvos (logos, cores, fontes) por cliente para aplicação instantânea na IA.',
+  },
+  {
+    category: 'Gestão de Clientes',
+    feature: 'Notificações Automáticas',
+    description:
+      'Alertas com links de aprovação mobile friendly enviados diretamente aos clientes.',
+  },
+  {
+    category: 'Gestão de Clientes',
+    feature: 'Relatórios PDF',
+    description: 'Geração de resumos mensais de performance prontos para impressão com um clique.',
+  },
+
+  {
+    category: 'Automação',
+    feature: 'Sincronização de Ads',
+    description: 'Exportação direta de criativos aprovados para Meta Ads e Google Ads.',
+  },
+  {
+    category: 'Automação',
+    feature: 'Aprovação Mobile',
+    description:
+      'Fluxo de feedback contínuo via links de compartilhamento otimizados para celular.',
+  },
+  {
+    category: 'Automação',
+    feature: 'Otimização de Verba IA',
+    description:
+      'Recomendações inteligentes para realocação de orçamento entre canais de anúncios.',
   },
 ]
 
@@ -103,28 +116,29 @@ export default function Ecosystem() {
         <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-2xl mb-4">
           <Server className="h-8 w-8 text-primary" />
         </div>
-        <h1 className="text-4xl font-bold tracking-tight">CAVA Digital Ecosystem Report</h1>
+        <h1 className="text-4xl font-bold tracking-tight">Relatório Executivo CAVA Digital</h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Structured summary of all current platform capabilities for stakeholder presentation.
+          Resumo estruturado de todas as capacidades atuais da plataforma para apresentação aos
+          stakeholders.
         </p>
       </div>
 
       <Card className="shadow-elevation border-t-4 border-t-primary">
         <CardHeader className="bg-muted/10 border-b">
           <CardTitle className="text-xl flex items-center gap-2">
-            <Zap className="h-5 w-5 text-primary" /> System Capabilities
+            <Zap className="h-5 w-5 text-primary" /> Capacidades do Sistema
           </CardTitle>
           <CardDescription>
-            Comprehensive list of features and their business value.
+            Lista abrangente de funcionalidades e seu valor de negócio.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow>
-                <TableHead className="w-[200px]">Category</TableHead>
-                <TableHead className="w-[250px]">Feature</TableHead>
-                <TableHead>Description</TableHead>
+                <TableHead className="w-[200px]">Categoria</TableHead>
+                <TableHead className="w-[250px]">Funcionalidade</TableHead>
+                <TableHead>Descrição</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

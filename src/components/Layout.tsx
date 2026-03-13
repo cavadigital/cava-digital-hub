@@ -67,7 +67,7 @@ const navItems = [
 const externalItems = [
   { title: 'Monitor de Deploys', icon: Activity, url: '/deploy-monitor' },
   { title: 'Portal do Cliente', icon: MonitorSmartphone, url: '/portal-cliente' },
-  { title: 'Relatório Ecossistema', icon: BookOpen, url: '/ecossistema' },
+  { title: 'Relatório Executivo', icon: BookOpen, url: '/relatorio-executivo' },
 ]
 
 export default function Layout() {

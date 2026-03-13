@@ -131,7 +131,7 @@ export default function ClientPortal() {
         <Target className="h-10 w-10 text-primary mx-auto mb-4" />
         <h2 className="text-2xl font-bold mb-2">Portal Transparente do Cliente</h2>
         <p className="text-muted-foreground text-sm max-w-lg mx-auto mb-6">
-          Acompanhe suas implantações, aprove assets da marca e veja o valor gerado pelas
+          Acompanhe suas implantações, aprove ativos da marca e veja o valor gerado pelas
           integrações CAVA.
         </p>
         <Select value={selectedClientId} onValueChange={setSelectedClientId}>
@@ -152,13 +152,13 @@ export default function ClientPortal() {
         <Tabs defaultValue="live" className="w-full">
           <TabsList className="mb-6 grid w-full grid-cols-3 max-w-2xl mx-auto h-12 print:hidden">
             <TabsTrigger value="live" className="text-sm">
-              Live Assets
+              Criativos Ativos
             </TabsTrigger>
             <TabsTrigger value="analytics" className="text-sm">
               Performance
             </TabsTrigger>
             <TabsTrigger value="assets" className="text-sm">
-              Brand Assets
+              Ativos de Marca
             </TabsTrigger>
           </TabsList>
 
@@ -166,7 +166,7 @@ export default function ClientPortal() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Card className="bg-background shadow-subtle border-primary/20">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-muted-foreground">Assets Gerados</CardTitle>
+                  <CardTitle className="text-sm text-muted-foreground">Criativos Gerados</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-foreground">24</div>
@@ -291,7 +291,7 @@ export default function ClientPortal() {
                   <div className="shrink-0 flex gap-4">
                     <div className="bg-background border-2 border-primary/30 rounded-xl p-4 text-center shadow-sm w-36 relative overflow-hidden">
                       <Badge className="absolute -top-1 -right-1 scale-[0.65] bg-success uppercase tracking-widest font-bold">
-                        Top Performer
+                        Maior Conversão
                       </Badge>
                       <p className="text-xs text-muted-foreground mb-1 font-medium">Meta Ads</p>
                       <p className="font-black text-xl text-primary">3.2% CTR</p>
@@ -360,7 +360,7 @@ export default function ClientPortal() {
               <CardContent>
                 <ChartContainer
                   config={{
-                    cliques: { label: 'Cliques nos Assets', color: 'hsl(var(--primary))' },
+                    cliques: { label: 'Cliques nos Criativos', color: 'hsl(var(--primary))' },
                     conversoes: { label: 'Conversões Geradas', color: 'hsl(var(--success))' },
                   }}
                   className="h-[350px]"
@@ -422,7 +422,7 @@ export default function ClientPortal() {
 
             <Card className="shadow-subtle">
               <CardHeader>
-                <CardTitle>Asset Performance Comparison</CardTitle>
+                <CardTitle>Comparativo de Performance de Criativos</CardTitle>
                 <CardDescription>
                   Correlacione banners gerados no Studio com suas métricas de anúncio.
                 </CardDescription>
@@ -431,7 +431,7 @@ export default function ClientPortal() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Ativo (Criativo)</TableHead>
+                      <TableHead>Criativo</TableHead>
                       <TableHead>Plataforma</TableHead>
                       <TableHead>CPM</TableHead>
                       <TableHead>CPC</TableHead>

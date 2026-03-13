@@ -46,7 +46,7 @@ const App = () => (
               <Route path="/deploy-monitor" element={<DeployMonitor />} />
               <Route path="/portal-cliente" element={<ClientPortal />} />
               <Route path="/analytics" element={<Analytics />} />
-              <Route path="/ecossistema" element={<Ecosystem />} />
+              <Route path="/relatorio-executivo" element={<Ecosystem />} />
               <Route path="/configuracoes/notificacoes" element={<NotificationSettings />} />
             </Route>
             <Route path="*" element={<NotFound />} />

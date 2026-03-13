@@ -36,7 +36,7 @@ export default function DevHub() {
         <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-2xl mb-4">
           <Code className="h-8 w-8 text-primary" />
         </div>
-        <h1 className="text-4xl font-bold tracking-tight">Dev Hub & UI Library</h1>
+        <h1 className="text-4xl font-bold tracking-tight">Dev Hub & Biblioteca UI</h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
           Gere código de layout com IA e injete componentes reutilizáveis direto nas plataformas de
           e-commerce.
@@ -46,10 +46,10 @@ export default function DevHub() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full max-w-[400px] grid-cols-2 h-12 mx-auto mb-8">
           <TabsTrigger value="copilot" className="flex items-center gap-2">
-            <Code className="w-4 h-4" /> AI Copilot
+            <Code className="w-4 h-4" /> Copilot IA
           </TabsTrigger>
           <TabsTrigger value="library" className="flex items-center gap-2">
-            <Layers className="w-4 h-4" /> Component Library
+            <Layers className="w-4 h-4" /> Biblioteca
           </TabsTrigger>
         </TabsList>
 

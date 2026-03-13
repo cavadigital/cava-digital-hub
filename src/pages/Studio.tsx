@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import {
   Select,
@@ -62,8 +63,15 @@ export default function Studio() {
   // Copywriting State
   const [offer, setOffer] = useState('')
   const [audience, setAudience] = useState('')
+  const [copyLanguage, setCopyLanguage] = useState('pt-BR')
   const [copyVariations, setCopyVariations] = useState<{ headline: string; body: string }[]>([])
   const [isGeneratingCopy, setIsGeneratingCopy] = useState(false)
+
+  // Interactive Components State
+  const [interactiveType, setInteractiveType] = useState('button')
+  const [interactiveColor, setInteractiveColor] = useState('#E3000F')
+  const [interactiveText, setInteractiveText] = useState('Comprar Agora')
+  const [generatedCode, setGeneratedCode] = useState('')
 
   const handleClientChange = (val: string) => {
     setClientId(val)
@@ -72,6 +80,7 @@ export default function Studio() {
       if (client) {
         if (client.assets.colors.length > 0) {
           setBundleColor(client.assets.colors[0].value)
+          setInteractiveColor(client.assets.colors[0].value)
         }
         if (client.assets.fonts.value.primary) {
           setBundleFont(client.assets.fonts.value.primary)
@@ -144,22 +153,68 @@ export default function Studio() {
   const handleGenerateCopy = () => {
     setIsGeneratingCopy(true)
     setTimeout(() => {
-      setCopyVariations([
-        {
-          headline: `Oferta Exclusiva: ${offer}!`,
-          body: `Para você que é ${audience}, aproveite essa oportunidade única para transformar seu dia a dia com a CAVA Digital.`,
-        },
-        {
-          headline: `Não Perca: ${offer} OFF`,
-          body: `Renove seu estilo hoje mesmo. O público de ${audience} já está aproveitando os melhores descontos do ano!`,
-        },
-        {
-          headline: `Últimas Horas: ${offer}`,
-          body: `A oportunidade perfeita para ${audience} economizar com inteligência e praticidade. Garanta agora!`,
-        },
-      ])
+      let variations = []
+      if (copyLanguage === 'en-US') {
+        variations = [
+          {
+            headline: `Exclusive Offer: ${offer}!`,
+            body: `For you who are ${audience}, enjoy this unique opportunity to transform your day to day.`,
+          },
+          {
+            headline: `Don't Miss Out: ${offer} OFF`,
+            body: `Renew your style today. People from ${audience} are already enjoying the best discounts of the year!`,
+          },
+          {
+            headline: `Last Hours: ${offer}`,
+            body: `The perfect opportunity for ${audience} to save with intelligence. Get it now!`,
+          },
+        ]
+      } else if (copyLanguage === 'es-ES') {
+        variations = [
+          {
+            headline: `Oferta Exclusiva: ${offer}!`,
+            body: `Para ti que eres ${audience}, aprovecha esta oportunidad única para transformar tu día a día.`,
+          },
+          {
+            headline: `No Te Lo Pierdas: ${offer} OFF`,
+            body: `Renueva tu estilo hoy mismo. ¡El público de ${audience} ya está aprovechando los mejores descuentos del año!`,
+          },
+          {
+            headline: `Últimas Horas: ${offer}`,
+            body: `La oportunidad perfecta para que ${audience} ahorre con inteligencia. ¡Asegúralo ahora!`,
+          },
+        ]
+      } else {
+        variations = [
+          {
+            headline: `Oferta Exclusiva: ${offer}!`,
+            body: `Para você que é ${audience}, aproveite essa oportunidade única para transformar seu dia a dia com a CAVA Digital.`,
+          },
+          {
+            headline: `Não Perca: ${offer} OFF`,
+            body: `Renove seu estilo hoje mesmo. O público de ${audience} já está aproveitando os melhores descontos do ano!`,
+          },
+          {
+            headline: `Últimas Horas: ${offer}`,
+            body: `A oportunidade perfeita para ${audience} economizar com inteligência e praticidade. Garanta agora!`,
+          },
+        ]
+      }
+      setCopyVariations(variations)
       setIsGeneratingCopy(false)
     }, 1500)
+  }
+
+  const handleGenerateInteractive = () => {
+    if (interactiveType === 'button') {
+      setGeneratedCode(
+        `<button \n  style="background-color: ${interactiveColor}; color: white; padding: 12px 24px; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"\n  onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 12px rgba(0,0,0,0.15)'"\n  onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.1)'"\n>\n  ${interactiveText}\n</button>`,
+      )
+    } else {
+      setGeneratedCode(
+        `<div style="padding: 16px; background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #991b1b; font-family: sans-serif; text-align: center; max-width: 300px; margin: 0 auto; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">\n  <strong style="display: block; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">⏳ Oferta expira em:</strong>\n  <span id="cava-timer" style="font-size: 24px; font-weight: 900; font-variant-numeric: tabular-nums;">00:15:00</span>\n</div>\n<script>\n  (function() {\n    let timeLeft = 15 * 60;\n    const timerEl = document.getElementById('cava-timer');\n    const interval = setInterval(() => {\n      if (timeLeft <= 0) { clearInterval(interval); return; }\n      timeLeft--;\n      const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');\n      const s = (timeLeft % 60).toString().padStart(2, '0');\n      if(timerEl) timerEl.innerText = '00:' + m + ':' + s;\n    }, 1000);\n  })();\n</script>`,
+      )
+    }
   }
 
   const handleSendToAdManager = (platform: string) => {
@@ -176,7 +231,7 @@ export default function Studio() {
             Studio Criativo
           </h1>
           <p className="text-muted-foreground text-sm">
-            Geração de assets otimizada para automação de performance.
+            Geração de ativos otimizada para automação de performance.
           </p>
         </div>
         <Button variant="outline" className="shadow-sm" asChild>
@@ -189,18 +244,24 @@ export default function Studio() {
       <Card className="shrink-0 shadow-md border-t-4 border-t-primary bg-muted/10">
         <CardContent className="p-4 md:p-6 flex flex-col gap-4">
           <Tabs defaultValue="visual" className="w-full">
-            <TabsList className="mb-4 bg-background/50 backdrop-blur-sm border shadow-sm h-10">
+            <TabsList className="mb-4 bg-background/50 backdrop-blur-sm border shadow-sm h-10 w-full sm:w-auto overflow-x-auto justify-start flex-nowrap">
               <TabsTrigger
                 value="visual"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shrink-0"
               >
                 Visual & Design
               </TabsTrigger>
               <TabsTrigger
                 value="copywriting"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shrink-0"
               >
-                Smart Copywriting
+                Copywriting IA
+              </TabsTrigger>
+              <TabsTrigger
+                value="interactive"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shrink-0"
+              >
+                Componentes Interativos
               </TabsTrigger>
             </TabsList>
 
@@ -228,10 +289,10 @@ export default function Studio() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1080x1080">Square 1080x1080</SelectItem>
+                        <SelectItem value="1080x1080">Quadrado 1080x1080</SelectItem>
                         <SelectItem value="1080x1920">Story 1080x1920</SelectItem>
                         <SelectItem value="1920x1080">Wide 1920x1080</SelectItem>
-                        <SelectItem value="custom">Customizado</SelectItem>
+                        <SelectItem value="custom">Personalizado</SelectItem>
                       </SelectContent>
                     </Select>
                     {preset === 'custom' && (
@@ -299,7 +360,7 @@ export default function Studio() {
                   ) : (
                     <Wand2 className="mr-2 h-4 w-4" />
                   )}
-                  Gerar Asset{isABTesting ? 's' : ''}
+                  Gerar Criativo{isABTesting ? 's' : ''}
                 </Button>
               </div>
             </TabsContent>
@@ -307,7 +368,7 @@ export default function Studio() {
             <TabsContent value="copywriting" className="m-0 space-y-6">
               <div className="flex flex-col md:flex-row gap-4 items-end bg-background p-4 rounded-lg shadow-sm border">
                 <div className="space-y-2 flex-1 w-full">
-                  <Label className="text-xs font-semibold uppercase">Campaign Offer</Label>
+                  <Label className="text-xs font-semibold uppercase">Oferta da Campanha</Label>
                   <Input
                     placeholder="Ex: 20% OFF na Black Friday"
                     value={offer}
@@ -315,12 +376,25 @@ export default function Studio() {
                   />
                 </div>
                 <div className="space-y-2 flex-1 w-full">
-                  <Label className="text-xs font-semibold uppercase">Target Audience</Label>
+                  <Label className="text-xs font-semibold uppercase">Público-Alvo</Label>
                   <Input
                     placeholder="Ex: Entusiastas de moda 25-40"
                     value={audience}
                     onChange={(e) => setAudience(e.target.value)}
                   />
+                </div>
+                <div className="space-y-2 flex-1 w-full max-w-[160px]">
+                  <Label className="text-xs font-semibold uppercase">Idioma</Label>
+                  <Select value={copyLanguage} onValueChange={setCopyLanguage}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pt-BR">Português</SelectItem>
+                      <SelectItem value="en-US">English</SelectItem>
+                      <SelectItem value="es-ES">Español</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Button
                   onClick={handleGenerateCopy}
@@ -384,6 +458,90 @@ export default function Studio() {
                       </CardContent>
                     </Card>
                   ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="interactive" className="m-0 space-y-6">
+              <div className="flex flex-col md:flex-row gap-4 items-end bg-background p-4 rounded-lg shadow-sm border">
+                <div className="space-y-2 flex-1 w-full max-w-[250px]">
+                  <Label className="text-xs font-semibold uppercase">Tipo de Componente</Label>
+                  <Select value={interactiveType} onValueChange={setInteractiveType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="button">Botão Animado</SelectItem>
+                      <SelectItem value="timer">Timer de Escassez</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {interactiveType === 'button' && (
+                  <>
+                    <div className="space-y-2 flex-1 w-full">
+                      <Label className="text-xs font-semibold uppercase">Texto do Botão</Label>
+                      <Input
+                        value={interactiveText}
+                        onChange={(e) => setInteractiveText(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2 shrink-0">
+                      <Label className="text-xs font-semibold uppercase">Cor Principal</Label>
+                      <Input
+                        type="color"
+                        value={interactiveColor}
+                        onChange={(e) => setInteractiveColor(e.target.value)}
+                        className="w-16 h-10 p-1 cursor-pointer bg-background"
+                      />
+                    </div>
+                  </>
+                )}
+                <Button
+                  onClick={handleGenerateInteractive}
+                  className="w-full md:w-56 h-10 shadow-md font-semibold shrink-0"
+                >
+                  <Code className="mr-2 h-4 w-4" /> Gerar Snippet
+                </Button>
+              </div>
+
+              {generatedCode && (
+                <div className="grid gap-6 md:grid-cols-2 animate-fade-in-up">
+                  <Card className="shadow-subtle">
+                    <CardHeader className="pb-3 border-b bg-muted/10">
+                      <CardTitle className="text-base">Preview Visual</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex items-center justify-center p-8 bg-muted/30 border-t border-dashed min-h-[250px]">
+                      <div
+                        dangerouslySetInnerHTML={{ __html: generatedCode.split('<script')[0] }}
+                      />
+                    </CardContent>
+                  </Card>
+                  <Card className="shadow-subtle">
+                    <CardHeader className="pb-3 border-b bg-muted/10">
+                      <CardTitle className="text-base flex justify-between items-center">
+                        Código Gerado (HTML/CSS){' '}
+                        <Badge variant="secondary">Pronto para Injeção</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 space-y-4">
+                      <Textarea
+                        value={generatedCode}
+                        readOnly
+                        className="font-mono text-xs min-h-[170px] bg-muted/50 border-border"
+                      />
+                      <Button
+                        className="w-full shadow-sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(generatedCode)
+                          toast.success('Código copiado!', {
+                            description: 'Cole diretamente no HTML da plataforma do cliente.',
+                          })
+                        }}
+                      >
+                        Copiar Código Completo
+                      </Button>
+                    </CardContent>
+                  </Card>
                 </div>
               )}
             </TabsContent>
@@ -565,7 +723,7 @@ export default function Studio() {
             </div>
             <p className="text-muted-foreground font-medium max-w-sm">
               A área de visualização está pronta. Configure os parâmetros acima, escolha o Brand Kit
-              e gere seu asset.
+              e gere seu criativo.
             </p>
           </div>
         )}

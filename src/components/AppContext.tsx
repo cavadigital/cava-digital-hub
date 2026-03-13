@@ -21,6 +21,7 @@ export type Client = {
   name: string
   phone?: string
   notifyWhatsApp?: boolean
+  healthScore?: number
   assets: {
     logos: AssetItem<string>[]
     colors: AssetItem<string>[]
@@ -79,6 +80,7 @@ const defaultClients: Client[] = [
     name: 'Lojas Renner',
     phone: '5511999999999',
     notifyWhatsApp: true,
+    healthScore: 92,
     assets: {
       logos: [{ value: 'renner-logo-primary.png', status: 'Approved' }],
       colors: [
@@ -94,6 +96,7 @@ const defaultClients: Client[] = [
     name: 'TechStore',
     phone: '5511888888888',
     notifyWhatsApp: false,
+    healthScore: 68,
     assets: {
       logos: [{ value: 'techstore-main.svg', status: 'Pending' }],
       colors: [

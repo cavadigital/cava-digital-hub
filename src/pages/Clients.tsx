@@ -80,7 +80,7 @@ export default function Clients() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Library de Brand Kits</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Biblioteca de Brand Kits</h1>
           <p className="text-muted-foreground">
             Gerencie os Kits de Marca (Cores, Fontes e Logos) para uso no Studio Criativo.
           </p>
@@ -123,19 +123,34 @@ export default function Clients() {
                 <CardDescription>Brand Kit sincronizado com a IA</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-2 mb-4 flex-wrap">
-                  {client.assets.colors.map((c, i) => (
-                    <div key={i} className="relative">
-                      <div
-                        className="w-4 h-4 rounded-full border border-border"
-                        style={{ backgroundColor: c.value }}
-                        title={c.value}
-                      />
-                      {c.status === 'Revision Requested' && (
-                        <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-destructive" />
-                      )}
-                    </div>
-                  ))}
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex gap-2 flex-wrap">
+                    {client.assets.colors.map((c, i) => (
+                      <div key={i} className="relative">
+                        <div
+                          className="w-4 h-4 rounded-full border border-border"
+                          style={{ backgroundColor: c.value }}
+                          title={c.value}
+                        />
+                        {c.status === 'Revision Requested' && (
+                          <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-destructive" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {client.healthScore !== undefined && (
+                    <Badge
+                      className={
+                        client.healthScore >= 80
+                          ? 'bg-success hover:bg-success text-white'
+                          : client.healthScore >= 50
+                            ? 'bg-warning text-yellow-900 hover:bg-warning border-yellow-400'
+                            : 'bg-destructive hover:bg-destructive text-white'
+                      }
+                    >
+                      Health Score: {client.healthScore}/100
+                    </Badge>
+                  )}
                 </div>
                 <Button
                   variant={needsRevision ? 'default' : 'secondary'}
