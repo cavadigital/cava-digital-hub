@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -40,6 +40,12 @@ import { toast } from 'sonner'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { format } from 'date-fns'
 
+declare global {
+  interface Window {
+    google?: any
+  }
+}
+
 const formatDuration = (mins: number) => {
   const h = Math.floor(mins / 60)
   const m = mins % 60
@@ -50,12 +56,14 @@ export default function Agenda() {
   const {
     meetings,
     isGoogleConnected,
-    toggleGoogleConnection,
+    googleToken,
+    connectGoogle,
+    disconnectGoogle,
+    updateGoogleMeetings,
     addMeeting,
     updateMeeting,
     deleteMeeting,
     setMeetingToConvert,
-    currentUser,
   } = useAppContext()
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
@@ -88,52 +96,110 @@ export default function Agenda() {
   })
 
   const [isSyncing, setIsSyncing] = useState(false)
-  const [isGoogleLoginOpen, setIsGoogleLoginOpen] = useState(false)
-  const [googleLoginStep, setGoogleLoginStep] = useState<'choose' | 'email' | 'password'>('choose')
-  const [googleEmail, setGoogleEmail] = useState('')
-  const [googlePassword, setGooglePassword] = useState('')
-
   const [isAiSuggestionsOpen, setIsAiSuggestionsOpen] = useState(false)
 
-  const handleOpenGoogleLogin = () => {
+  const fetchGoogleEvents = async (token: string) => {
+    try {
+      setIsSyncing(true)
+      const now = new Date()
+      // Fetch 1 month back and 2 months forward
+      const timeMin = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString()
+      const timeMax = new Date(now.getFullYear(), now.getMonth() + 2, 0).toISOString()
+
+      const res = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      )
+
+      if (!res.ok) throw new Error('Failed to fetch events')
+      const data = await res.json()
+
+      const mapped: Meeting[] = data.items
+        .map((item: any) => {
+          let dateStr = ''
+          let timeStr = '00:00'
+          let endTimeStr = '01:00'
+
+          if (item.start?.dateTime) {
+            const startDate = new Date(item.start.dateTime)
+            dateStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
+            timeStr = startDate.toTimeString().slice(0, 5)
+
+            if (item.end?.dateTime) {
+              const endDate = new Date(item.end.dateTime)
+              endTimeStr = endDate.toTimeString().slice(0, 5)
+            }
+          } else if (item.start?.date) {
+            dateStr = item.start.date
+          }
+
+          if (!dateStr) return null
+
+          return {
+            id: item.id,
+            date: dateStr,
+            time: timeStr,
+            endTime: endTimeStr,
+            title: item.summary || 'Sem Título',
+            type: 'Reunião Externa',
+            source: 'google',
+            description: item.description || '',
+            guests: item.attendees ? item.attendees.map((a: any) => a.email).join(', ') : '',
+          }
+        })
+        .filter(Boolean)
+
+      updateGoogleMeetings(mapped)
+      setIsSyncing(false)
+    } catch (err) {
+      console.error(err)
+      toast.error('Erro ao sincronizar eventos do Google Calendar.')
+      setIsSyncing(false)
+    }
+  }
+
+  const handleConnectGoogle = () => {
     if (isGoogleConnected) {
-      toggleGoogleConnection()
+      disconnectGoogle()
       toast.info('Google Workspace desconectado.', {
-        description: 'Reuniões sincronizadas foram ocultadas.',
+        description: 'Reuniões sincronizadas foram removidas da visualização.',
       })
       if (activePreview?.source === 'google') setActivePreview(null)
-    } else {
-      const mockOAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=MOCK_CLIENT_ID&redirect_uri=${window.location.origin}/agenda&response_type=code&scope=https://www.googleapis.com/auth/calendar.events&prompt=select_account`
-      console.log('Initiating OAuth Flow with fixed scopes:', mockOAuthUrl)
-
-      setGoogleLoginStep('choose')
-      setGoogleEmail('')
-      setGooglePassword('')
-      setIsGoogleLoginOpen(true)
+      return
     }
-  }
 
-  const handleGoogleAuthFast = () => {
-    setIsGoogleLoginOpen(false)
-    setIsSyncing(true)
-    setTimeout(() => {
-      toggleGoogleConnection()
-      setIsSyncing(false)
-      toast.success('Google Workspace conectado!', {
-        description: 'Sincronização bidirecional ativada com sucesso (Escopo: calendar.events).',
+    if (!window.google) {
+      toast.error('SDK do Google não carregado ainda. Verifique sua conexão.')
+      return
+    }
+
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+    if (!clientId) {
+      toast.error('Erro de Configuração', {
+        description: 'VITE_GOOGLE_CLIENT_ID não está definido nas variáveis de ambiente.',
       })
-    }, 1200)
-  }
-
-  const handleGoogleAuthSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (googleLoginStep === 'email') {
-      if (!googleEmail) return toast.error('Insira o email')
-      setGoogleLoginStep('password')
-    } else if (googleLoginStep === 'password') {
-      if (!googlePassword) return toast.error('Insira a senha')
-      handleGoogleAuthFast()
+      return
     }
+
+    const client = window.google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: 'https://www.googleapis.com/auth/calendar.events',
+      prompt: 'select_account',
+      callback: (response: any) => {
+        if (response.error !== undefined) {
+          toast.error(`Auth Error: ${response.error}`)
+          return
+        }
+        connectGoogle(response.access_token)
+        toast.success('Google Workspace conectado!', {
+          description: 'Sincronizando eventos...',
+        })
+        fetchGoogleEvents(response.access_token)
+      },
+    })
+    client.requestAccessToken()
   }
 
   const handleOpenCreate = () => {
@@ -152,7 +218,8 @@ export default function Agenda() {
   }
 
   const handleOpenEdit = (m: Meeting) => {
-    const localDate = new Date(m.date + 'T12:00:00')
+    const [year, month, day] = m.date.split('-').map(Number)
+    const localDate = new Date(year, month - 1, day)
     setFormData({
       id: m.id,
       title: m.title,
@@ -167,15 +234,41 @@ export default function Agenda() {
     setIsSchedulerOpen(true)
   }
 
-  const handleSave = () => {
+  const buildGooglePayload = (m: Omit<Meeting, 'id'>) => {
+    const [year, month, day] = m.date.split('-').map(Number)
+    const [startH, startM] = m.time.split(':').map(Number)
+    const [endH, endM] = m.endTime.split(':').map(Number)
+
+    const startDate = new Date(year, month - 1, day, startH, startM)
+    const endDate = new Date(year, month - 1, day, endH, endM)
+
+    return {
+      summary: m.title,
+      description: m.description,
+      location: m.type === 'Interna' ? 'CAVA Hub (Virtual)' : '',
+      start: {
+        dateTime: startDate.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      end: {
+        dateTime: endDate.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      attendees: m.guests ? m.guests.split(',').map((e) => ({ email: e.trim() })) : [],
+    }
+  }
+
+  const handleSave = async () => {
     if (!formData.title || !formData.date || !formData.time || !formData.endTime) {
       toast.error('Preencha os campos obrigatórios (Título, Data e Horários).')
       return
     }
 
+    const dateStr = `${formData.date.getFullYear()}-${String(formData.date.getMonth() + 1).padStart(2, '0')}-${String(formData.date.getDate()).padStart(2, '0')}`
+
     const meetingData: Omit<Meeting, 'id'> = {
       title: formData.title,
-      date: formData.date.toISOString().split('T')[0],
+      date: dateStr,
       time: formData.time,
       endTime: formData.endTime,
       type: formData.type,
@@ -184,82 +277,38 @@ export default function Agenda() {
       source: isGoogleConnected ? 'google' : 'internal',
     }
 
-    if (isGoogleConnected) {
-      const dateParts = meetingData.date.split('-')
-      const timeParts = meetingData.time.split(':')
-      const endTimeParts = meetingData.endTime.split(':')
+    if (isGoogleConnected && googleToken) {
+      setIsSchedulerOpen(false)
+      const payload = buildGooglePayload(meetingData)
+      const isUpdate = isEditing && formData.id && formData.id.length > 10
 
-      const startDateTime = new Date(
-        Number(dateParts[0]),
-        Number(dateParts[1]) - 1,
-        Number(dateParts[2]),
-        Number(timeParts[0]),
-        Number(timeParts[1]),
-      )
+      const apiCall = isUpdate
+        ? fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${formData.id}`, {
+            method: 'PUT',
+            headers: { Authorization: `Bearer ${googleToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+        : fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${googleToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
 
-      const endDateTime = new Date(
-        Number(dateParts[0]),
-        Number(dateParts[1]) - 1,
-        Number(dateParts[2]),
-        Number(endTimeParts[0]),
-        Number(endTimeParts[1]),
-      )
-
-      const googleApiPayload = {
-        summary: meetingData.title,
-        description: meetingData.description,
-        location: meetingData.type === 'Interna' ? 'CAVA Hub (Virtual)' : 'Google Meet',
-        start: {
-          dateTime: startDateTime.toISOString(),
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        },
-        end: {
-          dateTime: endDateTime.toISOString(),
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        },
-        attendees: meetingData.guests
-          ? meetingData.guests.split(',').map((e) => ({ email: e.trim() }))
-          : [],
-      }
-      console.log('Payload sent to Google Calendar API (ISO 8601):', googleApiPayload)
-    }
-
-    setIsSchedulerOpen(false)
-
-    if (isGoogleConnected) {
       toast.promise(
-        new Promise((resolve, reject) => {
-          setTimeout(() => {
-            // Enhanced API Error Handling simulation
-            if (meetingData.title.toLowerCase().includes('erro permissao')) {
-              reject(
-                new Error(
-                  'Permission denied: Insufficient scope for calendar events. Ensure you granted write access.',
-                ),
-              )
-            } else if (meetingData.title.toLowerCase().includes('erro data')) {
-              reject(
-                new Error('Invalid date format: ISO 8601 string expected for start/end times.'),
-              )
-            } else {
-              resolve(true)
-            }
-          }, 800)
+        apiCall.then(async (res) => {
+          if (!res.ok) throw new Error(await res.text())
+          const data = await res.json()
+          if (isUpdate) {
+            updateMeeting(formData.id, meetingData)
+          } else {
+            addMeeting({ ...meetingData, id: data.id }) // Temporary ID, fetch will replace
+          }
+          fetchGoogleEvents(googleToken)
         }),
         {
-          loading: isEditing
-            ? 'Sincronizando com Google Calendar...'
-            : 'Criando no Google Calendar...',
-          success: () => {
-            if (isEditing && formData.id) updateMeeting(formData.id, meetingData)
-            else addMeeting(meetingData)
-            return 'Sincronizado com sucesso com o Google Calendar!'
-          },
-          error: (err: any) => {
-            // Fallback to internal if creation fails
-            if (!isEditing) addMeeting({ ...meetingData, source: 'internal' })
-            return `Falha na Sincronização Google: ${err.message}`
-          },
+          loading: isUpdate ? 'Atualizando no Google Calendar...' : 'Criando no Google Calendar...',
+          success: 'Sincronizado com sucesso com o Google Calendar!',
+          error: (err: any) => `Falha na Sincronização Google: ${err.message || 'Erro'}`,
         },
       )
     } else {
@@ -270,15 +319,36 @@ export default function Agenda() {
         addMeeting(meetingData)
         toast.success('Reunião agendada com sucesso!')
       }
+      setIsSchedulerOpen(false)
     }
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const meet = meetings.find((m) => m.id === id)
+
+    if (meet?.source === 'google' && googleToken) {
+      setIsSchedulerOpen(false)
+      toast.promise(
+        fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${googleToken}` },
+        }).then(async (res) => {
+          if (!res.ok) throw new Error(await res.text())
+          deleteMeeting(id)
+          if (activePreview?.id === id) setActivePreview(null)
+          fetchGoogleEvents(googleToken)
+        }),
+        {
+          loading: 'Removendo do Google Calendar...',
+          success: 'Reunião removida com sucesso.',
+          error: 'Erro ao remover reunião no Google Calendar.',
+        },
+      )
+      return
+    }
+
     deleteMeeting(id)
-    toast.success('Reunião cancelada com sucesso.', {
-      description: meet?.source === 'google' ? 'Removido do Google Calendar.' : '',
-    })
+    toast.success('Reunião cancelada com sucesso.')
     if (activePreview?.id === id) setActivePreview(null)
     setIsSchedulerOpen(false)
   }
@@ -304,7 +374,7 @@ export default function Agenda() {
     if (!selectedDate) return []
     const dateStr = selectedDate.toISOString().split('T')[0]
     const dayMeetings = meetings
-      .filter((m) => m.date === dateStr && (isGoogleConnected || m.source === 'internal'))
+      .filter((m) => m.date === dateStr && (isGoogleConnected ? true : m.source === 'internal'))
       .sort((a, b) => a.time.localeCompare(b.time))
 
     const businessStart = 9 * 60
@@ -385,7 +455,7 @@ export default function Agenda() {
         <div className="flex flex-wrap gap-2">
           <Button
             variant={isGoogleConnected ? 'outline' : 'secondary'}
-            onClick={handleOpenGoogleLogin}
+            onClick={handleConnectGoogle}
             disabled={isSyncing}
             className={
               isGoogleConnected ? 'border-primary/20 hover:bg-primary/5' : 'bg-background shadow-sm'
@@ -658,7 +728,7 @@ export default function Agenda() {
                 id="title"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="Ex: Sync de Alinhamento (use 'erro permissao' para testar API)"
+                placeholder="Ex: Sync de Alinhamento"
               />
             </div>
 
@@ -756,112 +826,6 @@ export default function Agenda() {
               {isEditing ? 'Salvar Alterações' : 'Confirmar Agendamento'}
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isGoogleLoginOpen} onOpenChange={setIsGoogleLoginOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <img
-                src="https://img.usecurling.com/i?q=google&color=multicolor&shape=fill"
-                className="w-5 h-5"
-                alt="Google"
-              />
-              Conectar com Google Workspace
-            </DialogTitle>
-            <DialogDescription>
-              {googleLoginStep === 'choose' &&
-                'Escolha sua conta para habilitar a sincronização bi-direcional.'}
-              {googleLoginStep === 'email' && 'Fazer login com sua Conta do Google para continuar.'}
-              {googleLoginStep === 'password' && `Bem-vindo, ${googleEmail}`}
-            </DialogDescription>
-          </DialogHeader>
-
-          {googleLoginStep === 'choose' && (
-            <div className="py-6 flex flex-col gap-3">
-              <Button
-                variant="outline"
-                className="h-16 justify-start px-4 hover:bg-muted/50"
-                onClick={handleGoogleAuthFast}
-              >
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-4 text-primary font-bold text-lg shrink-0">
-                  <img
-                    src={currentUser.avatarUrl}
-                    className="w-full h-full rounded-full object-cover"
-                    alt={currentUser.name}
-                  />
-                </div>
-                <div className="text-left flex-1 overflow-hidden">
-                  <p className="font-semibold text-sm truncate">{currentUser.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{currentUser.email}</p>
-                </div>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-16 justify-start px-4 hover:bg-muted/50"
-                onClick={() => {
-                  const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=CAVA_CLIENT_ID&redirect_uri=${window.location.origin}/agenda&response_type=code&scope=https://www.googleapis.com/auth/calendar.events&prompt=select_account`
-                  console.log('Initiating OAuth Flow with prompt=select_account:', oauthUrl)
-
-                  toast.info('Redirecionando Auth...', {
-                    description:
-                      'Forçando seleção de conta com prompt=select_account para garantir a sincronização correta.',
-                  })
-
-                  setGoogleEmail('')
-                  setGooglePassword('')
-                  setGoogleLoginStep('email')
-                }}
-              >
-                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mr-4 shrink-0">
-                  <Users className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <span className="font-medium text-sm">Entrar com outra conta</span>
-              </Button>
-            </div>
-          )}
-
-          {googleLoginStep === 'email' && (
-            <form onSubmit={handleGoogleAuthSubmit} className="py-4 space-y-4">
-              <div className="space-y-2">
-                <Label>Email ou telefone</Label>
-                <Input
-                  autoFocus
-                  type="email"
-                  value={googleEmail}
-                  onChange={(e) => setGoogleEmail(e.target.value)}
-                  placeholder="Email corporativo"
-                />
-              </div>
-              <div className="flex justify-between items-center pt-2">
-                <Button variant="ghost" type="button" onClick={() => setGoogleLoginStep('choose')}>
-                  Voltar
-                </Button>
-                <Button type="submit">Avançar</Button>
-              </div>
-            </form>
-          )}
-
-          {googleLoginStep === 'password' && (
-            <form onSubmit={handleGoogleAuthSubmit} className="py-4 space-y-4">
-              <div className="space-y-2">
-                <Label>Digite sua senha</Label>
-                <Input
-                  autoFocus
-                  type="password"
-                  value={googlePassword}
-                  onChange={(e) => setGooglePassword(e.target.value)}
-                />
-              </div>
-              <div className="flex justify-between items-center pt-2">
-                <Button variant="ghost" type="button" onClick={() => setGoogleLoginStep('email')}>
-                  Voltar
-                </Button>
-                <Button type="submit">Autenticar</Button>
-              </div>
-            </form>
-          )}
         </DialogContent>
       </Dialog>
 

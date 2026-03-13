@@ -60,7 +60,6 @@ export default function Profile() {
   const filteredLogs = myTimeLogs.filter((log) => {
     if (!startDate && !endDate) return true
 
-    // Parse DD/MM/YYYY for filtering
     const [day, month, year] = log.date.split('/')
     const logDate = new Date(`${year}-${month}-${day}T12:00:00`)
 
@@ -79,7 +78,7 @@ export default function Profile() {
     updateCurrentUser(formData)
     setIsEditing(false)
     toast.success('Perfil atualizado com sucesso!', {
-      description: 'As alterações foram salvas e refletidas no sistema.',
+      description: 'As alterações foram salvas no banco de dados e refletidas no sistema.',
     })
   }
 
@@ -122,7 +121,7 @@ export default function Profile() {
 
       <Tabs defaultValue="general" className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2 h-12 mb-6">
-          <TabsTrigger value="general">Geral</TabsTrigger>
+          <TabsTrigger value="general">Geral & Perfil</TabsTrigger>
           <TabsTrigger value="productivity">Produtividade & Logs</TabsTrigger>
         </TabsList>
 
@@ -137,7 +136,7 @@ export default function Profile() {
                   onClick={() => setIsEditing(true)}
                   className="h-8 shadow-sm"
                 >
-                  <Edit className="w-4 h-4 mr-2" /> Editar
+                  <Edit className="w-4 h-4 mr-2" /> Editar Perfil
                 </Button>
               )}
             </CardHeader>
@@ -146,7 +145,7 @@ export default function Profile() {
                 <div className="space-y-4 animate-fade-in">
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Nome</Label>
+                      <Label>Nome Completo</Label>
                       <Input
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -154,7 +153,7 @@ export default function Profile() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Email Corporativo</Label>
+                      <Label>E-mail Corporativo</Label>
                       <Input
                         type="email"
                         value={formData.email}
@@ -208,12 +207,14 @@ export default function Profile() {
               ) : (
                 <div className="grid sm:grid-cols-2 gap-6 text-sm">
                   <div>
-                    <span className="font-medium text-muted-foreground block mb-1">Nome</span>
+                    <span className="font-medium text-muted-foreground block mb-1">
+                      Nome Completo
+                    </span>
                     <span className="font-semibold">{currentUser.name}</span>
                   </div>
                   <div>
                     <span className="font-medium text-muted-foreground block mb-1">
-                      Email Corporativo
+                      E-mail Corporativo
                     </span>
                     <span className="font-semibold">{currentUser.email}</span>
                   </div>

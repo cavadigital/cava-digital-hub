@@ -159,7 +159,10 @@ interface AppContextType {
   updateMeeting: (id: string, m: Partial<Meeting>) => void
   deleteMeeting: (id: string) => void
   isGoogleConnected: boolean
-  toggleGoogleConnection: () => void
+  googleToken: string | null
+  connectGoogle: (token: string) => void
+  disconnectGoogle: () => void
+  updateGoogleMeetings: (meetings: Meeting[]) => void
   meetingToConvert: Meeting | null
   setMeetingToConvert: (m: Meeting | null) => void
 }
@@ -309,6 +312,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   ])
 
   const [isGoogleConnected, setIsGoogleConnected] = useState(false)
+  const [googleToken, setGoogleToken] = useState<string | null>(null)
   const [meetingToConvert, setMeetingToConvert] = useState<Meeting | null>(null)
 
   const [notifiedWa, setNotifiedWa] = useState<Set<string>>(new Set())
@@ -411,7 +415,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               `${hours > 0 ? hours + 'h' : ''}${mins > 0 ? ' ' + mins + 'm' : ''}`.trim()
 
             toast('Reunião Encerrada', {
-              description: `Would you like to register these ${formattedTime} to a project?`,
+              description: `Deseja registrar essas ${formattedTime} a um projeto?`,
               action: {
                 label: 'Converter Tempo',
                 onClick: () => setMeetingToConvert(m),
@@ -431,36 +435,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCurrentUser((prev) => ({ ...prev, ...data }))
   }
 
-  const toggleGoogleConnection = () => {
-    setIsGoogleConnected((prev) => {
-      const next = !prev
-      if (next) {
-        setMeetings((current) => {
-          if (current.some((m) => m.id === 'mock-google-1')) return current
-          return [
-            ...current,
-            {
-              id: 'mock-google-1',
-              date: new Date().toISOString().split('T')[0],
-              time: '11:30',
-              endTime: '12:15',
-              title: 'Sync de Performance - Lojas Renner',
-              type: 'Interna',
-              source: 'google',
-              description: 'Evento sincronizado bidirecionalmente com o Google Calendar.',
-              guests: 'equipe@cavadigital.com.br',
-            },
-          ]
-        })
-      } else {
-        setMeetings((current) => current.filter((m) => m.source !== 'google'))
-      }
-      return next
+  const connectGoogle = (token: string) => {
+    setGoogleToken(token)
+    setIsGoogleConnected(true)
+  }
+
+  const disconnectGoogle = () => {
+    setGoogleToken(null)
+    setIsGoogleConnected(false)
+    setMeetings((prev) => prev.filter((m) => m.source !== 'google'))
+  }
+
+  const updateGoogleMeetings = (googleMeetings: Meeting[]) => {
+    setMeetings((prev) => {
+      const internal = prev.filter((m) => m.source === 'internal')
+      return [...internal, ...googleMeetings]
     })
   }
 
   const addMeeting = (m: Omit<Meeting, 'id'>) => {
-    setMeetings((prev) => [...prev, { ...m, id: Math.random().toString(36).substring(2, 9) }])
+    setMeetings((prev) => [
+      ...prev,
+      {
+        ...m,
+        id:
+          m.source === 'google'
+            ? `local-${Date.now()}`
+            : Math.random().toString(36).substring(2, 9),
+      },
+    ])
   }
 
   const updateMeeting = (id: string, updates: Partial<Meeting>) => {
@@ -703,7 +706,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateMeeting,
         deleteMeeting,
         isGoogleConnected,
-        toggleGoogleConnection,
+        googleToken,
+        connectGoogle,
+        disconnectGoogle,
+        updateGoogleMeetings,
         meetingToConvert,
         setMeetingToConvert,
       }}
