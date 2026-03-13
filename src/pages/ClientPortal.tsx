@@ -11,12 +11,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useAppContext, AssetStatus } from '@/components/AppContext'
-import { Check, X, MessageSquare, AlertCircle } from 'lucide-react'
+import { Check, X, AlertCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { toast } from 'sonner'
 
 export default function ClientPortal() {
-  const { clients, updateAssetStatus } = useAppContext()
+  const { clients, updateAssetStatus, notificationSettings } = useAppContext()
   const [selectedClientId, setSelectedClientId] = useState<string>('')
   const [feedbackInput, setFeedbackInput] = useState<Record<string, string>>({})
   const [showFeedback, setShowFeedback] = useState<Record<string, boolean>>({})
@@ -26,6 +27,12 @@ export default function ClientPortal() {
   const handleApprove = (type: 'logos' | 'colors' | 'fonts', index: number | null) => {
     updateAssetStatus(selectedClientId, type, index, 'Approved')
     setShowFeedback({ ...showFeedback, [`${type}-${index}`]: false })
+
+    if (notificationSettings.assetApprovalSlack) {
+      toast.success('Notificação Slack Enviada', {
+        description: `O cliente ${client?.name} APROVOU o Brand Asset (${type}).`,
+      })
+    }
   }
 
   const handleRequestChange = (
@@ -36,6 +43,12 @@ export default function ClientPortal() {
     updateAssetStatus(selectedClientId, type, index, 'Revision Requested', feedback)
     setShowFeedback({ ...showFeedback, [`${type}-${index}`]: false })
     setFeedbackInput({ ...feedbackInput, [`${type}-${index}`]: '' })
+
+    if (notificationSettings.assetApprovalSlack) {
+      toast.warning('Notificação Slack Enviada', {
+        description: `O cliente ${client?.name} SOLICITOU REVISÃO no Brand Asset (${type}).`,
+      })
+    }
   }
 
   const toggleFeedback = (key: string) => {

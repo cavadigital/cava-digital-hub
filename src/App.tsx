@@ -19,6 +19,8 @@ import HR from './pages/HR'
 import Clients from './pages/Clients'
 import DeployMonitor from './pages/DeployMonitor'
 import ClientPortal from './pages/ClientPortal'
+import Analytics from './pages/Analytics'
+import NotificationSettings from './pages/NotificationSettings'
 
 const App = () => (
   <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
@@ -40,6 +42,8 @@ const App = () => (
               <Route path="/rh" element={<HR />} />
               <Route path="/deploy-monitor" element={<DeployMonitor />} />
               <Route path="/portal-cliente" element={<ClientPortal />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/configuracoes/notificacoes" element={<NotificationSettings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

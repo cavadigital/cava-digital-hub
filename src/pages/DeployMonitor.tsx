@@ -25,6 +25,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Activity, CheckCircle2, XCircle, AlertTriangle, TerminalSquare } from 'lucide-react'
+import { useAppContext } from '@/components/AppContext'
+import { toast } from 'sonner'
 
 const MOCK_DEPLOYS = [
   {
@@ -69,12 +71,27 @@ const MOCK_DEPLOYS = [
 export default function DeployMonitor() {
   const [platformFilter, setPlatformFilter] = useState('All')
   const [statusFilter, setStatusFilter] = useState('All')
+  const { notificationSettings } = useAppContext()
 
   const filteredDeploys = MOCK_DEPLOYS.filter((d) => {
     if (platformFilter !== 'All' && d.platform !== platformFilter) return false
     if (statusFilter !== 'All' && d.status !== statusFilter) return false
     return true
   })
+
+  const simulateDeployError = () => {
+    if (notificationSettings.deployErrorSlack) {
+      toast.error('🚨 Alerta Slack: Erro de Deploy', {
+        description: 'Falha crítica detectada no deploy da Nuvemshop (Conflito de versão).',
+        action: {
+          label: 'Ver Log',
+          onClick: () => console.log('Abrindo logs detalhados...'),
+        },
+      })
+    } else {
+      toast.info('Erro de deploy detectado (Notificações Slack Desativadas)')
+    }
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -85,6 +102,13 @@ export default function DeployMonitor() {
             Acompanhe a integridade e histórico de implantações nas plataformas.
           </p>
         </div>
+        <Button
+          variant="outline"
+          className="border-destructive text-destructive hover:bg-destructive/10"
+          onClick={simulateDeployError}
+        >
+          <AlertTriangle className="w-4 h-4 mr-2" /> Simular Erro (Notificação)
+        </Button>
       </div>
 
       <Card className="shadow-subtle border-t-4 border-t-primary">

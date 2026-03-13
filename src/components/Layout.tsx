@@ -28,6 +28,7 @@ import {
   LogOut,
   Activity,
   MonitorSmartphone,
+  BarChart3,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
@@ -58,6 +59,7 @@ const navItems = [
   { title: 'Studio Criativo', icon: Palette, url: '/studio' },
   { title: 'Dev Hub', icon: Code2, url: '/devhub' },
   { title: 'Marketing Hub', icon: Megaphone, url: '/marketing' },
+  { title: 'Analytics IA', icon: BarChart3, url: '/analytics' },
   { title: 'RH', icon: Users, url: '/rh' },
 ]
 
@@ -171,7 +173,14 @@ export default function Layout() {
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>Configurações</DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      to="/configuracoes/notificacoes"
+                      className="w-full cursor-pointer flex items-center"
+                    >
+                      <Bell className="mr-2 h-4 w-4" /> Notificações
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem className="text-destructive">
                     <LogOut className="mr-2 h-4 w-4" /> Sair
                   </DropdownMenuItem>

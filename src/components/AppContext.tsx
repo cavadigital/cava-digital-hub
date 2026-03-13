@@ -25,6 +25,21 @@ export type Client = {
   }
 }
 
+export type UIComponent = {
+  id: string
+  name: string
+  category: string
+  platform: string
+  code: { html: string; css: string; js: string }
+}
+
+export type NotificationSettings = {
+  assetApprovalEmail: boolean
+  assetApprovalSlack: boolean
+  deployErrorEmail: boolean
+  deployErrorSlack: boolean
+}
+
 interface AppContextType {
   prompts: Prompt[]
   addPrompt: (p: Omit<Prompt, 'id'>) => void
@@ -37,6 +52,11 @@ interface AppContextType {
     status: AssetStatus,
     feedback?: string,
   ) => void
+  uiComponents: UIComponent[]
+  addUIComponent: (comp: Omit<UIComponent, 'id'>) => void
+  deleteUIComponent: (id: string) => void
+  notificationSettings: NotificationSettings
+  updateNotificationSettings: (settings: Partial<NotificationSettings>) => void
 }
 
 const defaultClients: Client[] = [
@@ -65,72 +85,61 @@ const defaultClients: Client[] = [
       fonts: { value: { primary: 'Roboto', secondary: 'Open Sans' }, status: 'Pending' },
     },
   },
-  {
-    id: '3',
-    name: 'Boutique Z',
-    assets: {
-      logos: [
-        {
-          value: 'boutique-z.jpg',
-          status: 'Revision Requested',
-          feedback: 'O logo está em baixa resolução.',
-        },
-      ],
-      colors: [
-        { value: '#FF1493', status: 'Approved' },
-        { value: '#111111', status: 'Approved' },
-      ],
-      fonts: {
-        value: { primary: 'Playfair Display', secondary: 'Lato' },
-        status: 'Revision Requested',
-        feedback: 'Gostaria de uma fonte mais moderna para os títulos.',
-      },
-    },
-  },
 ]
 
 const defaultPrompts: Prompt[] = [
   {
     id: '1',
     title: 'Black Friday Hero Banner',
-    text: 'Crie um banner de alta conversão para Black Friday. O foco deve ser no desconto de até 70%. Use elementos visuais que transmitam urgência (cronômetros, faixas de alerta) e siga estritamente a paleta de cores da marca. Destaque o CTA "Comprar Agora".',
+    text: 'Crie um banner de alta conversão para Black Friday.',
     category: 'Performance Banner',
   },
+]
+
+const defaultUIComponents: UIComponent[] = [
   {
-    id: '2',
-    title: 'Post Carrossel Instagram',
-    text: 'Gere 3 imagens para um carrossel educativo no Instagram sobre "Como escolher o produto ideal". Design limpo, muito espaço em branco, tipografia grande e legível. A última imagem deve conter um CTA para o link na bio.',
-    category: 'Social Media',
+    id: 'c1',
+    name: 'Header Promocional Fluido',
+    category: 'Headers',
+    platform: 'Wake',
+    code: {
+      html: '<div style="background:#000;color:#fff;text-align:center;padding:8px;font-family:sans-serif;">Frete Grátis acima de R$199</div>',
+      css: '/* Adicione estilos no seu painel */',
+      js: 'console.log("Promo Header Init");',
+    },
   },
   {
-    id: '3',
-    title: 'Wake Mobile Header CSS',
-    text: 'Gere um CSS otimizado para o header mobile da plataforma Wake. O menu deve ser off-canvas (hamburguer), a barra de busca deve expandir ao clicar, e o logo deve ficar centralizado. Use variáveis CSS para as cores da marca.',
-    category: 'Wake',
-  },
-  {
-    id: '4',
-    title: 'Tray Checkout Adjustments',
-    text: 'Forneça um script JS e CSS para otimizar a visualização de parcelamento no checkout da Tray. Destaque o valor à vista em verde e oculte juros desnecessários.',
-    category: 'Tray',
-  },
-  {
-    id: '5',
-    title: 'Nuvemshop Carousel JS',
-    text: 'Crie uma inicialização de carrossel (Slick ou Swiper) configurada especificamente para as classes nativas da Nuvemshop, com autoplay e setas customizadas.',
-    category: 'Nuvemshop',
+    id: 'c2',
+    name: 'Botão Flutuante (WhatsApp)',
+    category: 'Buttons',
+    platform: 'Tray',
+    code: {
+      html: '<a href="#" style="position:fixed;bottom:20px;right:20px;background:#25D366;color:#fff;padding:12px 20px;border-radius:50px;text-decoration:none;font-family:sans-serif;box-shadow:0 4px 10px rgba(0,0,0,0.2);">WhatsApp</a>',
+      css: '',
+      js: '',
+    },
   },
 ]
+
+const defaultNotificationSettings: NotificationSettings = {
+  assetApprovalEmail: true,
+  assetApprovalSlack: true,
+  deployErrorEmail: true,
+  deployErrorSlack: true,
+}
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [prompts, setPrompts] = useState<Prompt[]>(defaultPrompts)
   const [clients, setClients] = useState<Client[]>(defaultClients)
+  const [uiComponents, setUiComponents] = useState<UIComponent[]>(defaultUIComponents)
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(
+    defaultNotificationSettings,
+  )
 
   const addPrompt = (p: Omit<Prompt, 'id'>) => {
-    const newPrompt = { ...p, id: Math.random().toString(36).substr(2, 9) }
-    setPrompts([...prompts, newPrompt])
+    setPrompts([...prompts, { ...p, id: Math.random().toString(36).substr(2, 9) }])
   }
 
   const updateClientAssets = (id: string, assets: Client['assets']) => {
@@ -164,9 +173,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     )
   }
 
+  const addUIComponent = (comp: Omit<UIComponent, 'id'>) => {
+    setUiComponents([...uiComponents, { ...comp, id: Math.random().toString(36).substr(2, 9) }])
+  }
+
+  const deleteUIComponent = (id: string) => {
+    setUiComponents(uiComponents.filter((c) => c.id !== id))
+  }
+
+  const updateNotificationSettings = (settings: Partial<NotificationSettings>) => {
+    setNotificationSettings({ ...notificationSettings, ...settings })
+  }
+
   return (
     <AppContext.Provider
-      value={{ prompts, addPrompt, clients, updateClientAssets, updateAssetStatus }}
+      value={{
+        prompts,
+        addPrompt,
+        clients,
+        updateClientAssets,
+        updateAssetStatus,
+        uiComponents,
+        addUIComponent,
+        deleteUIComponent,
+        notificationSettings,
+        updateNotificationSettings,
+      }}
     >
       {children}
     </AppContext.Provider>
