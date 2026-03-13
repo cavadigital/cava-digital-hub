@@ -6,6 +6,13 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Wand2,
   PlaySquare,
   Image as ImageIcon,
@@ -14,8 +21,11 @@ import {
   UploadCloud,
   Loader2,
 } from 'lucide-react'
+import { useAppContext } from '@/components/AppContext'
+import { SavePromptDialog, BrowsePromptsDialog } from '@/components/PromptsLibrary'
 
 export default function Studio() {
+  const { clients } = useAppContext()
   const [customSize, setCustomSize] = useState(false)
   const [preset, setPreset] = useState('1080x1080')
   const [width, setWidth] = useState('1080')
@@ -23,9 +33,13 @@ export default function Studio() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
 
+  const [promptText, setPromptText] = useState('')
+  const [selectedClientId, setSelectedClientId] = useState<string>('none')
+
+  const client = clients.find((c) => c.id === selectedClientId)
+
   const handleGenerate = () => {
     setIsGenerating(true)
-    // Simulate AI generation process
     setTimeout(() => {
       const finalW = customSize ? width : preset.split('x')[0]
       const finalH = customSize ? height : preset.split('x')[1]
@@ -78,8 +92,7 @@ export default function Studio() {
                 <div>
                   <h2 className="text-2xl font-semibold mb-2">AI Banner Studio</h2>
                   <p className="text-muted-foreground text-sm">
-                    Gere banners de alta conversão. Configure as dimensões e forneça uma identidade
-                    visual para a IA seguir.
+                    Gere banners de alta conversão referenciando automaticamente os Brand Assets.
                   </p>
                 </div>
 
@@ -118,44 +131,51 @@ export default function Studio() {
                         Custom Size
                       </Button>
                     </div>
+                  </div>
 
-                    {customSize && (
-                      <div className="flex gap-4 pt-2 animate-fade-in-down">
-                        <div className="space-y-1.5 flex-1">
-                          <Label className="text-xs text-muted-foreground">Width (px)</Label>
-                          <Input
-                            type="number"
-                            placeholder="Largura"
-                            value={width}
-                            onChange={(e) => setWidth(e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-1.5 flex-1">
-                          <Label className="text-xs text-muted-foreground">Height (px)</Label>
-                          <Input
-                            type="number"
-                            placeholder="Altura"
-                            value={height}
-                            onChange={(e) => setHeight(e.target.value)}
-                          />
-                        </div>
+                  <div className="space-y-2 pt-2">
+                    <Label>Carregar Assets do Cliente</Label>
+                    <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                      <SelectTrigger className="w-full bg-background">
+                        <SelectValue placeholder="Selecione um cliente para injetar a marca" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhum (Configuração Manual)</SelectItem>
+                        {clients.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {client && (
+                      <div className="text-xs bg-primary/5 text-primary-foreground/80 p-3 rounded-md border border-primary/20 mt-2 animate-fade-in-up">
+                        <strong className="text-primary block mb-1">
+                          ✓ Identidade Injetada no Prompt:
+                        </strong>
+                        Cores: {client.assets.colors.join(', ')} <br />
+                        Fontes: {client.assets.fonts.primary}, {client.assets.fonts.secondary}{' '}
+                        <br />
+                        Logo: {client.assets.logos[0] || 'Nenhum logo'}
                       </div>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Reference Layout/Visual Identity</Label>
-                    <div className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center text-center bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group">
-                      <UploadCloud className="h-8 w-8 text-muted-foreground mb-2 group-hover:text-primary transition-colors" />
-                      <p className="text-sm font-medium">Faça upload da identidade visual</p>
-                      <p className="text-xs text-muted-foreground">PNG, JPG ou PDF (Máx 10MB)</p>
+                    <div className="flex justify-between items-center mb-1">
+                      <Label>Descrição do Banner (Prompt)</Label>
+                      <div className="flex gap-2">
+                        <BrowsePromptsDialog onSelect={setPromptText} />
+                        <SavePromptDialog
+                          currentText={promptText}
+                          defaultCategory="Performance Banner"
+                        />
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Banner Description</Label>
                     <Textarea
-                      placeholder="Descreva o cenário, elementos em destaque, paleta de cores e o objetivo da campanha..."
+                      value={promptText}
+                      onChange={(e) => setPromptText(e.target.value)}
+                      placeholder="Descreva o cenário, elementos em destaque e o objetivo da campanha..."
                       className="min-h-[100px] resize-none"
                     />
                   </div>
@@ -164,7 +184,7 @@ export default function Studio() {
                     className="w-full font-bold text-base h-12 shadow-md hover:shadow-lg transition-all"
                     size="lg"
                     onClick={handleGenerate}
-                    disabled={isGenerating}
+                    disabled={isGenerating || !promptText}
                   >
                     {isGenerating ? (
                       <>
@@ -172,7 +192,7 @@ export default function Studio() {
                       </>
                     ) : (
                       <>
-                        <Wand2 className="mr-2 h-5 w-5" /> Generate Banner
+                        <Wand2 className="mr-2 h-5 w-5" /> Gerar Banner
                       </>
                     )}
                   </Button>
@@ -209,7 +229,7 @@ export default function Studio() {
                     </div>
                     <p className="text-muted-foreground text-sm max-w-[250px]">
                       {isGenerating
-                        ? 'A IA está analisando a identidade visual e compondo o banner...'
+                        ? 'A IA está analisando o prompt e compondo o banner...'
                         : 'Aguardando configuração para gerar imagens exclusivas...'}
                     </p>
                   </div>
@@ -218,69 +238,15 @@ export default function Studio() {
             </div>
           </TabsContent>
 
+          {/* Dummy Tabs for Design and Video */}
           <TabsContent value="design" className="m-0 flex w-full h-full data-[state=active]:flex">
-            <div className="w-64 border-r bg-background p-4 flex flex-col gap-4">
-              <div className="font-semibold text-sm">Ferramentas</div>
-              <div className="grid grid-cols-2 gap-2">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div
-                    key={i}
-                    className="aspect-square bg-muted rounded border flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors"
-                  >
-                    <ImageIcon className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                ))}
-              </div>
-              <Button variant="secondary" className="mt-auto w-full">
-                Biblioteca CAVA
-              </Button>
-            </div>
-            <div className="flex-1 bg-gray-100 flex items-center justify-center p-8 overflow-hidden relative">
-              <div className="absolute top-4 right-4">
-                <Button size="sm">
-                  <Download className="w-4 h-4 mr-2" /> Exportar
-                </Button>
-              </div>
-              <div className="w-[400px] h-[400px] bg-white shadow-elevation rounded flex items-center justify-center border text-muted-foreground font-medium">
-                Canvas Area
-              </div>
+            <div className="w-full flex items-center justify-center text-muted-foreground">
+              Editor Integrado (Em Breve)
             </div>
           </TabsContent>
-
-          <TabsContent
-            value="video"
-            className="m-0 flex flex-col w-full h-full data-[state=active]:flex"
-          >
-            <div className="flex-1 flex">
-              <div className="w-72 border-r bg-background p-4">
-                <div className="font-semibold text-sm mb-4">Mídia do Projeto</div>
-                <div className="space-y-2">
-                  <div className="h-16 bg-muted rounded border flex items-center px-3 gap-3 text-sm">
-                    <PlaySquare className="w-4 h-4" /> Take_01.mp4
-                  </div>
-                  <div className="h-16 bg-muted rounded border flex items-center px-3 gap-3 text-sm">
-                    <PlaySquare className="w-4 h-4" /> Take_02.mp4
-                  </div>
-                </div>
-              </div>
-              <div className="flex-1 bg-black p-8 flex items-center justify-center relative">
-                <div className="aspect-video w-full max-w-2xl bg-gray-900 rounded-lg shadow-2xl flex items-center justify-center">
-                  <PlaySquare className="w-16 h-16 text-white/20" />
-                </div>
-              </div>
-            </div>
-            <div className="h-48 border-t bg-background p-4 flex flex-col">
-              <div className="font-semibold text-xs mb-2 text-muted-foreground flex justify-between">
-                <span>Timeline</span>
-                <span>00:00:00</span>
-              </div>
-              <div className="flex-1 bg-muted/50 rounded border relative overflow-hidden flex flex-col justify-between py-2">
-                <div className="h-8 bg-blue-500/20 border border-blue-500/40 rounded mx-4 w-1/3 mt-1"></div>
-                <div className="h-8 bg-green-500/20 border border-green-500/40 rounded mx-4 w-1/2 ml-[20%]"></div>
-                <div className="absolute top-0 bottom-0 left-1/4 w-[2px] bg-red-500">
-                  <div className="absolute -top-1 -left-1.5 w-3 h-3 bg-red-500 rotate-45"></div>
-                </div>
-              </div>
+          <TabsContent value="video" className="m-0 flex w-full h-full data-[state=active]:flex">
+            <div className="w-full flex items-center justify-center text-muted-foreground">
+              Edição de Vídeo (Em Breve)
             </div>
           </TabsContent>
         </div>
