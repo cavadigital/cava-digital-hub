@@ -2,6 +2,7 @@
 import * as React from 'react'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { DayButton, DayPicker, getDefaultClassNames } from 'react-day-picker'
+import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 import { cn } from '@/lib/utils'
@@ -34,13 +35,13 @@ function Calendar({
       )}
       captionLayout={captionLayout}
       formatters={{
-        formatMonthDropdown: (date) => date.toLocaleString('pt-BR', { month: 'short' }),
+        formatMonthDropdown: (date) => format(date, 'LLL', { locale: ptBR }),
         formatCaption: (date) => {
-          const str = date.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })
+          const str = format(date, 'MMMM yyyy', { locale: ptBR })
           return str.charAt(0).toUpperCase() + str.slice(1)
         },
         formatWeekdayName: (date) => {
-          const str = date.toLocaleString('pt-BR', { weekday: 'short' })
+          const str = format(date, 'eee', { locale: ptBR })
           return str.charAt(0).toUpperCase() + str.slice(1).replace('.', '')
         },
         ...formatters,

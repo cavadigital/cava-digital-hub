@@ -312,9 +312,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
   ])
 
-  const [isGoogleConnected, setIsGoogleConnected] = useState(false)
-  const [googleToken, setGoogleToken] = useState<string | null>(null)
-  const [googleEmail, setGoogleEmail] = useState<string | null>(null)
+  const [isGoogleConnected, setIsGoogleConnected] = useState<boolean>(
+    () => localStorage.getItem('googleToken') !== null,
+  )
+  const [googleToken, setGoogleToken] = useState<string | null>(() =>
+    localStorage.getItem('googleToken'),
+  )
+  const [googleEmail, setGoogleEmail] = useState<string | null>(() =>
+    localStorage.getItem('googleEmail'),
+  )
+
   const [meetingToConvert, setMeetingToConvert] = useState<Meeting | null>(null)
 
   const [notifiedWa, setNotifiedWa] = useState<Set<string>>(new Set())
@@ -441,12 +448,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setGoogleToken(token)
     setGoogleEmail(email)
     setIsGoogleConnected(true)
+    localStorage.setItem('googleToken', token)
+    localStorage.setItem('googleEmail', email)
   }
 
   const disconnectGoogle = () => {
     setGoogleToken(null)
     setGoogleEmail(null)
     setIsGoogleConnected(false)
+    localStorage.removeItem('googleToken')
+    localStorage.removeItem('googleEmail')
     setMeetings((prev) => prev.filter((m) => m.source !== 'google'))
   }
 

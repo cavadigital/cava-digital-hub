@@ -57,16 +57,14 @@ export function useGoogleAuth() {
       return
     }
 
-    // Use environment variable with fallback to avoid "invalid_client" if .env fails to load,
-    // and trim to ensure no trailing spaces cause 401 errors.
-    const rawClientId =
+    const clientId = (
       import.meta.env.VITE_GOOGLE_CLIENT_ID ||
       '325964860086-1g2p73scrd62b71r2n3g8t1mhn4d6qno.apps.googleusercontent.com'
-    const clientId = rawClientId.trim()
+    ).trim()
 
     if (!clientId) {
       toast.error('Erro de Configuração', {
-        description: 'VITE_GOOGLE_CLIENT_ID não está definido nas variáveis de ambiente.',
+        description: 'O Client ID do Google não está definido.',
       })
       setIsAuthLoading(false)
       return
@@ -77,19 +75,18 @@ export function useGoogleAuth() {
         client_id: clientId,
         scope:
           'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
-        hint: 'contato@cavadigital.com.br',
         prompt: 'consent',
         callback: async (response: any) => {
           if (response.error) {
             let errorDesc = 'O acesso foi negado ou ocorreu um problema de configuração.'
             if (response.error === 'invalid_client') {
               errorDesc =
-                'Erro 401: O Client ID configurado não é válido ou as URLs atuais não estão autorizadas no Google Cloud Console.'
+                'Erro 401 (invalid_client): A URL atual não está autorizada no Google Cloud Console ou o Client ID é inválido.'
             } else if (response.error === 'access_denied') {
               errorDesc = 'A solicitação de acesso foi cancelada ou negada pelo usuário.'
             }
 
-            toast.error(`Erro de Autorização: ${response.error}`, {
+            toast.error('Erro de Autorização', {
               description: errorDesc,
             })
             setIsAuthLoading(false)
@@ -122,7 +119,7 @@ export function useGoogleAuth() {
         error_callback: (error: any) => {
           if (error.type !== 'popup_closed') {
             toast.error('Erro na conexão com o Google', {
-              description: `Ocorreu um problema com o popup de autenticação (${error.type}). Verifique se os popups estão permitidos.`,
+              description: `Ocorreu um problema com o popup de autenticação (${error.type}).`,
             })
           }
           setIsAuthLoading(false)

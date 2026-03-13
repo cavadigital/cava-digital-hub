@@ -115,10 +115,10 @@ export default function Agenda() {
         if (res.status === 401 || res.status === 403) {
           disconnectGoogle()
           throw new Error(
-            'Sessão expirada ou permissões insuficientes (Erro 401/403). Por favor, reconecte sua conta.',
+            'Sessão expirada ou permissões insuficientes. Por favor, reconecte sua conta do Google.',
           )
         }
-        throw new Error(`Erro ${res.status}: Falha ao obter eventos do Google Calendar.`)
+        throw new Error(`Falha ao obter eventos do Google Calendar.`)
       }
 
       const data = await res.json()
@@ -161,7 +161,7 @@ export default function Agenda() {
       updateGoogleMeetings(mapped)
     } catch (err: any) {
       console.error(err)
-      toast.error('Erro de Sincronização Google', {
+      toast.error('Erro de Sincronização', {
         description: err.message || 'Falha ao sincronizar eventos.',
       })
     } finally {
@@ -276,10 +276,10 @@ export default function Agenda() {
             if (res.status === 401 || res.status === 403) {
               disconnectGoogle()
               throw new Error(
-                'Sessão expirada. O acesso foi revogado ou o token é inválido (Erro 401/403). Reconecte sua conta.',
+                'Sessão expirada. A permissão foi revogada ou a sessão expirou. Reconecte sua conta do Google.',
               )
             }
-            throw new Error(await res.text())
+            throw new Error('Ocorreu um erro ao salvar o compromisso no Google Calendar.')
           }
           const data = await res.json()
           if (isUpdate) {
@@ -292,8 +292,7 @@ export default function Agenda() {
         {
           loading: isUpdate ? 'Atualizando no Google Calendar...' : 'Criando no Google Calendar...',
           success: 'Sincronizado com sucesso com o Google Calendar!',
-          error: (err: any) =>
-            `Falha na Sincronização Google: ${err.message || 'Erro. Verifique sua conexão.'}`,
+          error: (err: any) => `Falha na Sincronização: ${err.message || 'Erro de conexão.'}`,
         },
       )
     } else {
@@ -322,10 +321,10 @@ export default function Agenda() {
             if (res.status === 401 || res.status === 403) {
               disconnectGoogle()
               throw new Error(
-                'Sessão expirada. O acesso foi revogado ou o token é inválido (Erro 401/403). Reconecte sua conta.',
+                'Sessão expirada. A permissão foi revogada ou a sessão expirou. Reconecte sua conta do Google.',
               )
             }
-            throw new Error(await res.text())
+            throw new Error('Falha ao remover o compromisso do Google Calendar.')
           }
           deleteMeeting(id)
           if (activePreview?.id === id) setActivePreview(null)
@@ -334,8 +333,7 @@ export default function Agenda() {
         {
           loading: 'Removendo do Google Calendar...',
           success: 'Reunião removida com sucesso.',
-          error: (err: any) =>
-            `Erro ao remover reunião: ${err.message || 'Falha na comunicação com o Google.'}`,
+          error: (err: any) => `Erro ao remover reunião: ${err.message || 'Falha de conexão.'}`,
         },
       )
       return
@@ -741,7 +739,7 @@ export default function Agenda() {
                       {formData.date ? (
                         format(formData.date, 'dd/MM/yyyy', { locale: ptBR })
                       ) : (
-                        <span>Selecione</span>
+                        <span>Selecione a data</span>
                       )}
                     </Button>
                   </PopoverTrigger>
