@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAppContext } from '@/components/AppContext'
-import { Search, Save, BookOpen, Check } from 'lucide-react'
+import { Search, Save, BookOpen, Check, Sparkles } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -152,5 +152,55 @@ export function BrowsePromptsDialog({
         </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+export function SmartPromptSuggestions({
+  category,
+  onSelect,
+}: {
+  category: string
+  onSelect: (text: string) => void
+}) {
+  const { prompts } = useAppContext()
+
+  if (!category) return null
+
+  const suggested = prompts.filter(
+    (p) =>
+      p.category.toLowerCase().includes(category.toLowerCase()) ||
+      p.title.toLowerCase().includes(category.toLowerCase()),
+  )
+
+  if (suggested.length === 0) return null
+
+  return (
+    <div className="space-y-2 mt-4 bg-primary/5 p-4 rounded-xl border border-primary/20 animate-fade-in-up">
+      <div className="flex items-center gap-2 mb-2 text-primary font-medium text-sm">
+        <Sparkles className="h-4 w-4" />
+        Sugestões Inteligentes ({category})
+      </div>
+      <div className="grid gap-2">
+        {suggested.map((prompt) => (
+          <div
+            key={prompt.id}
+            className="bg-background border shadow-sm p-3 rounded-md flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between group hover:border-primary/50 transition-colors"
+          >
+            <div className="flex-1">
+              <h4 className="text-sm font-semibold">{prompt.title}</h4>
+              <p className="text-xs text-muted-foreground line-clamp-1">{prompt.text}</p>
+            </div>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => onSelect(prompt.text)}
+              className="shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+            >
+              <Check className="h-3 w-3 mr-1" /> Usar
+            </Button>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }

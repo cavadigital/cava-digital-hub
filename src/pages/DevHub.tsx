@@ -1,17 +1,7 @@
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import {
-  UploadCloud,
-  Code,
-  Settings2,
-  FileJson,
-  Loader2,
-  Copy,
-  Check,
-  Rocket,
-  Shield,
-} from 'lucide-react'
+import { UploadCloud, Code, Loader2, Copy, Check, Rocket, Shield } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -22,7 +12,7 @@ import {
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { SavePromptDialog, BrowsePromptsDialog } from '@/components/PromptsLibrary'
+import { SavePromptDialog, SmartPromptSuggestions } from '@/components/PromptsLibrary'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 
@@ -119,7 +109,7 @@ export default function DevHub() {
                     <SelectValue placeholder="Selecione a plataforma" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Wake">Wake Commerce</SelectItem>
+                    <SelectItem value="Wake">Wake</SelectItem>
                     <SelectItem value="Tray">Tray</SelectItem>
                     <SelectItem value="Nuvemshop">Nuvemshop</SelectItem>
                   </SelectContent>
@@ -130,16 +120,16 @@ export default function DevHub() {
                 <div className="flex justify-between items-center mb-1">
                   <Label>Instruções Adicionais (Prompt)</Label>
                   <div className="flex gap-2">
-                    <BrowsePromptsDialog onSelect={setDevPrompt} />
-                    <SavePromptDialog currentText={devPrompt} defaultCategory="Dev CSS/JS" />
+                    <SavePromptDialog currentText={devPrompt} defaultCategory={platform} />
                   </div>
                 </div>
                 <Textarea
                   value={devPrompt}
                   onChange={(e) => setDevPrompt(e.target.value)}
-                  placeholder="Detalhes específicos para a IA. Ex: Usar flexbox, focar em acessibilidade, seguir BEM CSS..."
+                  placeholder="Detalhes específicos para a IA. Ex: Usar flexbox, focar em acessibilidade..."
                   className="h-28 resize-none text-sm"
                 />
+                <SmartPromptSuggestions category={platform} onSelect={setDevPrompt} />
               </div>
 
               <Button
@@ -150,11 +140,11 @@ export default function DevHub() {
               >
                 {isConverting ? (
                   <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Processando Layout e Prompt...
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Processando...
                   </>
                 ) : (
                   <>
-                    <Code className="mr-2 h-5 w-5" /> Generate Code
+                    <Code className="mr-2 h-5 w-5" /> Gerar Código
                   </>
                 )}
               </Button>
@@ -264,14 +254,13 @@ export default function DevHub() {
               <h3 className="text-xl font-semibold mb-2">Aguardando Configurações</h3>
               <p className="text-muted-foreground max-w-md">
                 Defina o arquivo de design e forneça as instruções detalhadas (ou use um Prompt
-                Vencedor) para a IA gerar uma marcação estrutural perfeita.
+                Vencedor) para a IA gerar código limpo.
               </p>
             </Card>
           )}
         </div>
       </div>
 
-      {/* Direct Deploy Modal */}
       <Dialog
         open={deployModalOpen}
         onOpenChange={(open) => {
@@ -293,7 +282,7 @@ export default function DevHub() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Wake">Wake Commerce</SelectItem>
+                  <SelectItem value="Wake">Wake</SelectItem>
                   <SelectItem value="Tray">Tray</SelectItem>
                   <SelectItem value="Nuvemshop">Nuvemshop</SelectItem>
                 </SelectContent>
@@ -303,11 +292,6 @@ export default function DevHub() {
               <Label>API Key / Store Token</Label>
               <Input type="password" placeholder="••••••••••••••••••••••••" />
             </div>
-            <div className="space-y-2">
-              <Label>Environment URL (opcional)</Label>
-              <Input placeholder="https://..." />
-            </div>
-
             <div className="flex gap-3 pt-4">
               <Button
                 variant="outline"
@@ -347,14 +331,10 @@ export default function DevHub() {
                     : 'Push Code'}
               </Button>
             </div>
-
             {deployStatus === 'success' && (
               <div className="p-3 mt-2 bg-success/10 text-success text-sm rounded-md border border-success/20 flex items-start">
                 <Check className="h-4 w-4 mr-2 mt-0.5 shrink-0" />
-                <p>
-                  Transferência concluída. Arquivos HTML, CSS e JS injetados no editor de template
-                  da <b>{deployPlatform}</b> via API.
-                </p>
+                <p>Transferência concluída e registrada no Monitor de Deploys.</p>
               </div>
             )}
           </div>

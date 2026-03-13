@@ -10,16 +10,18 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet'
-import { useAppContext, Client } from '@/components/AppContext'
-import { UploadCloud, Plus, X, Search, Briefcase, Palette, Type } from 'lucide-react'
+import { useAppContext, Client, AssetItem } from '@/components/AppContext'
+import { UploadCloud, Plus, X, Search, Briefcase, Palette, Type, AlertCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
 export default function Clients() {
   const { clients, updateClientAssets } = useAppContext()
   const [search, setSearch] = useState('')
   const [activeClient, setActiveClient] = useState<Client | null>(null)
-  const [editedColors, setEditedColors] = useState<string[]>([])
-  const [editedFonts, setEditedFonts] = useState({ primary: '', secondary: '' })
+  const [editedColors, setEditedColors] = useState<AssetItem<string>[]>([])
+  const [editedFonts, setEditedFonts] = useState<AssetItem<{ primary: string; secondary: string }>>(
+    { value: { primary: '', secondary: '' }, status: 'Pending' },
+  )
 
   const handleEdit = (client: Client) => {
     setActiveClient(client)
@@ -40,13 +42,31 @@ export default function Clients() {
 
   const filteredClients = clients.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
 
+  const renderBadge = (status: string) => {
+    if (status === 'Approved')
+      return (
+        <Badge className="absolute -top-2 -right-2 scale-75 bg-success hover:bg-success">Ok</Badge>
+      )
+    if (status === 'Revision Requested')
+      return (
+        <Badge className="absolute -top-2 -right-2 scale-75 bg-destructive hover:bg-destructive text-white">
+          X
+        </Badge>
+      )
+    return (
+      <Badge className="absolute -top-2 -right-2 scale-75 bg-warning text-yellow-900 border-yellow-400 hover:bg-warning">
+        !
+      </Badge>
+    )
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Clientes & Brand Assets</h1>
           <p className="text-muted-foreground">
-            Gerencie o portfólio de clientes e suas identidades visuais centralizadas.
+            Gerencie o portfólio de clientes e o status de aprovação visual.
           </p>
         </div>
         <div className="relative w-full sm:w-72">
@@ -61,32 +81,57 @@ export default function Clients() {
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredClients.map((client) => (
-          <Card key={client.id} className="shadow-subtle hover:shadow-elevation transition-shadow">
-            <CardHeader className="pb-4">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3 text-primary">
-                <Briefcase className="w-6 h-6" />
-              </div>
-              <CardTitle className="text-lg">{client.name}</CardTitle>
-              <CardDescription>Assets sincronizados com geradores IA</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2 mb-4 flex-wrap">
-                {client.assets.colors.map((c, i) => (
-                  <div
-                    key={i}
-                    className="w-4 h-4 rounded-full border border-border"
-                    style={{ backgroundColor: c }}
-                    title={c}
-                  />
-                ))}
-              </div>
-              <Button variant="secondary" className="w-full" onClick={() => handleEdit(client)}>
-                Gerenciar Marca
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+        {filteredClients.map((client) => {
+          const needsRevision =
+            client.assets.logos.some((l) => l.status === 'Revision Requested') ||
+            client.assets.colors.some((c) => c.status === 'Revision Requested') ||
+            client.assets.fonts.status === 'Revision Requested'
+
+          return (
+            <Card
+              key={client.id}
+              className={`shadow-subtle hover:shadow-elevation transition-shadow ${needsRevision ? 'border-destructive/50 bg-destructive/5' : ''}`}
+            >
+              <CardHeader className="pb-4">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                    <Briefcase className="w-6 h-6" />
+                  </div>
+                  {needsRevision && (
+                    <Badge variant="destructive" className="flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" /> Revisão Cliente
+                    </Badge>
+                  )}
+                </div>
+                <CardTitle className="text-lg">{client.name}</CardTitle>
+                <CardDescription>Assets sincronizados com geradores IA</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2 mb-4 flex-wrap">
+                  {client.assets.colors.map((c, i) => (
+                    <div key={i} className="relative">
+                      <div
+                        className="w-4 h-4 rounded-full border border-border"
+                        style={{ backgroundColor: c.value }}
+                        title={c.value}
+                      />
+                      {c.status === 'Revision Requested' && (
+                        <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-destructive" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  variant={needsRevision ? 'default' : 'secondary'}
+                  className="w-full"
+                  onClick={() => handleEdit(client)}
+                >
+                  Gerenciar Marca
+                </Button>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       <Sheet open={!!activeClient} onOpenChange={(open) => !open && setActiveClient(null)}>
@@ -99,7 +144,7 @@ export default function Clients() {
                 </div>
                 <SheetTitle className="text-2xl">{activeClient.name}</SheetTitle>
                 <SheetDescription>
-                  Configure a identidade visual que a IA irá usar como referência.
+                  Configure a identidade visual. Atente-se aos feedbacks do cliente.
                 </SheetDescription>
               </SheetHeader>
 
@@ -111,26 +156,22 @@ export default function Clients() {
                   </h4>
                   <div className="flex gap-4 flex-wrap">
                     {activeClient.assets.logos.map((logo, i) => (
-                      <div
-                        key={i}
-                        className="h-20 w-28 bg-muted border rounded-md flex flex-col items-center justify-center relative group p-2 text-center"
-                      >
-                        <span className="text-[10px] text-muted-foreground font-medium break-all">
-                          {logo}
-                        </span>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                      <div key={i} className="flex flex-col gap-1 w-28">
+                        <div
+                          className={`h-20 w-full bg-muted border rounded-md flex items-center justify-center relative p-2 text-center ${logo.status === 'Revision Requested' ? 'border-destructive bg-destructive/10' : ''}`}
                         >
-                          <X className="h-3 w-3" />
-                        </Button>
+                          <span className="text-[10px] text-muted-foreground font-medium break-all">
+                            {logo.value}
+                          </span>
+                          {renderBadge(logo.status)}
+                        </div>
+                        {logo.feedback && (
+                          <span className="text-[10px] text-destructive leading-tight">
+                            "{logo.feedback}"
+                          </span>
+                        )}
                       </div>
                     ))}
-                    <div className="border-2 border-dashed border-border rounded-md h-20 w-28 flex flex-col items-center justify-center text-center bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors">
-                      <UploadCloud className="h-5 w-5 text-muted-foreground mb-1" />
-                      <span className="text-[10px] font-medium text-muted-foreground">Upload</span>
-                    </div>
                   </div>
                 </div>
 
@@ -139,40 +180,52 @@ export default function Clients() {
                   <h4 className="text-sm font-semibold flex items-center">
                     <Palette className="w-4 h-4 mr-2" /> Paleta de Cores
                   </h4>
-                  <div className="flex gap-2 flex-wrap items-center">
+                  <div className="flex gap-3 flex-col items-start">
                     {editedColors.map((color, idx) => (
-                      <div
-                        key={idx}
-                        className="relative flex items-center gap-2 bg-muted/50 p-1.5 rounded-md border shadow-sm"
-                      >
-                        <input
-                          type="color"
-                          value={color}
-                          onChange={(e) => {
-                            const newColors = [...editedColors]
-                            newColors[idx] = e.target.value
-                            setEditedColors(newColors)
-                          }}
-                          className="w-6 h-6 rounded cursor-pointer border-0 p-0 bg-transparent"
-                        />
-                        <span className="text-xs font-mono uppercase w-16">{color}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                          onClick={() => {
-                            setEditedColors(editedColors.filter((_, i) => i !== idx))
-                          }}
+                      <div key={idx} className="flex items-center gap-2">
+                        <div
+                          className={`relative flex items-center gap-2 bg-muted/50 p-1.5 rounded-md border shadow-sm ${color.status === 'Revision Requested' ? 'border-destructive bg-destructive/10' : ''}`}
                         >
-                          <X className="h-3 w-3" />
-                        </Button>
+                          <input
+                            type="color"
+                            value={color.value}
+                            onChange={(e) => {
+                              const newColors = [...editedColors]
+                              newColors[idx] = { value: e.target.value, status: 'Pending' }
+                              setEditedColors(newColors)
+                            }}
+                            className="w-6 h-6 rounded cursor-pointer border-0 p-0 bg-transparent"
+                          />
+                          <span className="text-xs font-mono uppercase w-16">{color.value}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                            onClick={() =>
+                              setEditedColors(editedColors.filter((_, i) => i !== idx))
+                            }
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                          {renderBadge(color.status)}
+                        </div>
+                        {color.feedback && (
+                          <span
+                            className="text-xs text-destructive flex-1 italic max-w-[200px] truncate"
+                            title={color.feedback}
+                          >
+                            "{color.feedback}"
+                          </span>
+                        )}
                       </div>
                     ))}
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setEditedColors([...editedColors, '#000000'])}
-                      className="h-9 border-dashed"
+                      onClick={() =>
+                        setEditedColors([...editedColors, { value: '#000000', status: 'Pending' }])
+                      }
+                      className="h-9 border-dashed mt-2"
                     >
                       <Plus className="h-4 w-4 mr-1" /> Adicionar Cor
                     </Button>
@@ -184,31 +237,47 @@ export default function Clients() {
                   <h4 className="text-sm font-semibold flex items-center">
                     <Type className="w-4 h-4 mr-2" /> Tipografia
                   </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">
-                        Fonte Primária (Títulos)
-                      </Label>
-                      <Input
-                        value={editedFonts.primary}
-                        onChange={(e) =>
-                          setEditedFonts({ ...editedFonts, primary: e.target.value })
-                        }
-                        placeholder="Ex: Inter"
-                      />
+                  <div
+                    className={`p-4 rounded-xl border ${editedFonts.status === 'Revision Requested' ? 'border-destructive bg-destructive/5' : 'bg-muted/30'}`}
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex gap-2 items-center">
+                        <Badge variant="outline" className="text-[10px]">
+                          Status: {editedFonts.status}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground">
-                        Fonte Secundária (Textos)
-                      </Label>
-                      <Input
-                        value={editedFonts.secondary}
-                        onChange={(e) =>
-                          setEditedFonts({ ...editedFonts, secondary: e.target.value })
-                        }
-                        placeholder="Ex: Roboto"
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Primária (Títulos)</Label>
+                        <Input
+                          value={editedFonts.value.primary}
+                          onChange={(e) =>
+                            setEditedFonts({
+                              value: { ...editedFonts.value, primary: e.target.value },
+                              status: 'Pending',
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Secundária (Textos)</Label>
+                        <Input
+                          value={editedFonts.value.secondary}
+                          onChange={(e) =>
+                            setEditedFonts({
+                              value: { ...editedFonts.value, secondary: e.target.value },
+                              status: 'Pending',
+                            })
+                          }
+                        />
+                      </div>
                     </div>
+                    {editedFonts.feedback && (
+                      <p className="text-xs text-destructive mt-3 bg-destructive/10 p-2 rounded border border-destructive/20 italic">
+                        Feedback do Cliente: "{editedFonts.feedback}"
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -216,7 +285,7 @@ export default function Clients() {
                   <Button variant="outline" onClick={() => setActiveClient(null)}>
                     Cancelar
                   </Button>
-                  <Button onClick={handleSave}>Salvar Configurações</Button>
+                  <Button onClick={handleSave}>Salvar e Enviar para Aprovação</Button>
                 </div>
               </div>
             </>

@@ -17,6 +17,8 @@ import DevHub from './pages/DevHub'
 import MarketingHub from './pages/MarketingHub'
 import HR from './pages/HR'
 import Clients from './pages/Clients'
+import DeployMonitor from './pages/DeployMonitor'
+import ClientPortal from './pages/ClientPortal'
 
 const App = () => (
   <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
@@ -36,6 +38,8 @@ const App = () => (
               <Route path="/devhub" element={<DevHub />} />
               <Route path="/marketing" element={<MarketingHub />} />
               <Route path="/rh" element={<HR />} />
+              <Route path="/deploy-monitor" element={<DeployMonitor />} />
+              <Route path="/portal-cliente" element={<ClientPortal />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

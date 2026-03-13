@@ -20,9 +20,14 @@ import {
   Share2,
   UploadCloud,
   Loader2,
+  AlertCircle,
 } from 'lucide-react'
 import { useAppContext } from '@/components/AppContext'
-import { SavePromptDialog, BrowsePromptsDialog } from '@/components/PromptsLibrary'
+import {
+  SavePromptDialog,
+  BrowsePromptsDialog,
+  SmartPromptSuggestions,
+} from '@/components/PromptsLibrary'
 
 export default function Studio() {
   const { clients } = useAppContext()
@@ -33,6 +38,7 @@ export default function Studio() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
 
+  const [projectType, setProjectType] = useState<string>('Performance Banner')
   const [promptText, setPromptText] = useState('')
   const [selectedClientId, setSelectedClientId] = useState<string>('none')
 
@@ -49,6 +55,17 @@ export default function Studio() {
       setIsGenerating(false)
     }, 2500)
   }
+
+  const hasUnapprovedAssets =
+    client &&
+    (client.assets.logos.some((l) => l.status !== 'Approved') ||
+      client.assets.colors.some((c) => c.status !== 'Approved') ||
+      client.assets.fonts.status !== 'Approved')
+
+  const approvedColors =
+    client?.assets.colors.filter((c) => c.status === 'Approved').map((c) => c.value) || []
+  const approvedLogos =
+    client?.assets.logos.filter((l) => l.status === 'Approved').map((l) => l.value) || []
 
   return (
     <div className="space-y-6 h-[calc(100vh-120px)] flex flex-col animate-fade-in">
@@ -92,49 +109,42 @@ export default function Studio() {
                 <div>
                   <h2 className="text-2xl font-semibold mb-2">AI Banner Studio</h2>
                   <p className="text-muted-foreground text-sm">
-                    Gere banners de alta conversão referenciando automaticamente os Brand Assets.
+                    Gere banners de alta conversão referenciando automaticamente os Brand Assets
+                    aprovados.
                   </p>
                 </div>
 
                 <div className="space-y-5 bg-background p-6 rounded-xl border shadow-sm flex-1">
-                  <div className="space-y-3">
-                    <Label>Dimensões do Banner</Label>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant={!customSize && preset === '1080x1080' ? 'default' : 'outline'}
-                        onClick={() => {
-                          setPreset('1080x1080')
-                          setCustomSize(false)
-                        }}
-                        size="sm"
-                        className="text-xs"
-                      >
-                        Square 1080x1080
-                      </Button>
-                      <Button
-                        variant={!customSize && preset === '1080x1920' ? 'default' : 'outline'}
-                        onClick={() => {
-                          setPreset('1080x1920')
-                          setCustomSize(false)
-                        }}
-                        size="sm"
-                        className="text-xs"
-                      >
-                        Story 1080x1920
-                      </Button>
-                      <Button
-                        variant={customSize ? 'default' : 'outline'}
-                        onClick={() => setCustomSize(true)}
-                        size="sm"
-                        className="text-xs"
-                      >
-                        Custom Size
-                      </Button>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <Label>Tipo de Projeto</Label>
+                      <Select value={projectType} onValueChange={setProjectType}>
+                        <SelectTrigger className="w-full bg-background">
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Performance Banner">Performance Banner</SelectItem>
+                          <SelectItem value="Social Media">Social Media</SelectItem>
+                          <SelectItem value="Email Marketing">Email Marketing</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-3">
+                      <Label>Dimensões</Label>
+                      <Select value={preset} onValueChange={setPreset}>
+                        <SelectTrigger className="w-full bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1080x1080">Square 1080x1080</SelectItem>
+                          <SelectItem value="1080x1920">Story 1080x1920</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
                   <div className="space-y-2 pt-2">
-                    <Label>Carregar Assets do Cliente</Label>
+                    <Label>Injetar Assets do Cliente</Label>
                     <Select value={selectedClientId} onValueChange={setSelectedClientId}>
                       <SelectTrigger className="w-full bg-background">
                         <SelectValue placeholder="Selecione um cliente para injetar a marca" />
@@ -149,14 +159,32 @@ export default function Studio() {
                       </SelectContent>
                     </Select>
                     {client && (
-                      <div className="text-xs bg-primary/5 text-primary-foreground/80 p-3 rounded-md border border-primary/20 mt-2 animate-fade-in-up">
-                        <strong className="text-primary block mb-1">
-                          ✓ Identidade Injetada no Prompt:
-                        </strong>
-                        Cores: {client.assets.colors.join(', ')} <br />
-                        Fontes: {client.assets.fonts.primary}, {client.assets.fonts.secondary}{' '}
-                        <br />
-                        Logo: {client.assets.logos[0] || 'Nenhum logo'}
+                      <div className="mt-2 space-y-2 animate-fade-in-up">
+                        {hasUnapprovedAssets && (
+                          <div className="text-xs bg-warning/10 text-yellow-700 border-yellow-200 border p-2 rounded-md flex items-start">
+                            <AlertCircle className="h-4 w-4 mr-1.5 shrink-0 mt-0.5" />
+                            <p>
+                              O cliente possui assets pendentes ou em revisão. A IA utilizará apenas
+                              os elementos já <strong>Aprovados</strong>.
+                            </p>
+                          </div>
+                        )}
+                        <div className="text-xs bg-primary/5 text-primary-foreground/80 p-3 rounded-md border border-primary/20">
+                          <strong className="text-primary block mb-1">
+                            ✓ Identidade Injetada (Aprovados):
+                          </strong>
+                          Cores:{' '}
+                          {approvedColors.length
+                            ? approvedColors.join(', ')
+                            : 'Nenhuma cor aprovada'}{' '}
+                          <br />
+                          Fontes:{' '}
+                          {client.assets.fonts.status === 'Approved'
+                            ? `${client.assets.fonts.value.primary}, ${client.assets.fonts.value.secondary}`
+                            : 'Nenhuma fonte aprovada'}{' '}
+                          <br />
+                          Logo: {approvedLogos[0] || 'Nenhum logo aprovado'}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -165,11 +193,7 @@ export default function Studio() {
                     <div className="flex justify-between items-center mb-1">
                       <Label>Descrição do Banner (Prompt)</Label>
                       <div className="flex gap-2">
-                        <BrowsePromptsDialog onSelect={setPromptText} />
-                        <SavePromptDialog
-                          currentText={promptText}
-                          defaultCategory="Performance Banner"
-                        />
+                        <SavePromptDialog currentText={promptText} defaultCategory={projectType} />
                       </div>
                     </div>
                     <Textarea
@@ -178,6 +202,7 @@ export default function Studio() {
                       placeholder="Descreva o cenário, elementos em destaque e o objetivo da campanha..."
                       className="min-h-[100px] resize-none"
                     />
+                    <SmartPromptSuggestions category={projectType} onSelect={setPromptText} />
                   </div>
 
                   <Button
@@ -238,7 +263,7 @@ export default function Studio() {
             </div>
           </TabsContent>
 
-          {/* Dummy Tabs for Design and Video */}
+          {/* Dummy Tabs */}
           <TabsContent value="design" className="m-0 flex w-full h-full data-[state=active]:flex">
             <div className="w-full flex items-center justify-center text-muted-foreground">
               Editor Integrado (Em Breve)

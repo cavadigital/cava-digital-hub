@@ -10,6 +10,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
   SidebarInset,
+  SidebarSeparator,
 } from '@/components/ui/sidebar'
 import {
   LayoutDashboard,
@@ -25,6 +26,8 @@ import {
   Bell,
   Settings,
   LogOut,
+  Activity,
+  MonitorSmartphone,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
@@ -58,6 +61,11 @@ const navItems = [
   { title: 'RH', icon: Users, url: '/rh' },
 ]
 
+const externalItems = [
+  { title: 'Monitor de Deploys', icon: Activity, url: '/deploy-monitor' },
+  { title: 'Portal do Cliente', icon: MonitorSmartphone, url: '/portal-cliente' },
+]
+
 export default function Layout() {
   const location = useLocation()
   const { currentBranch, setBranch } = useBranch()
@@ -67,7 +75,6 @@ export default function Layout() {
       <div className="flex min-h-screen w-full bg-background text-foreground">
         <Sidebar className="border-r border-sidebar-border shadow-elevation">
           <SidebarHeader className="p-4 flex items-center justify-center h-20">
-            {/* Try to load logo, fallback to styled text */}
             <div className="flex items-center gap-2 font-bold text-2xl tracking-tighter">
               <span className="text-sidebar-primary-foreground">CAVA</span>
               <span className="text-sidebar-primary">Digital</span>
@@ -85,6 +92,26 @@ export default function Layout() {
                     <Link to={item.url} className="flex items-center gap-3">
                       <item.icon className="h-5 w-5" />
                       <span className="font-medium">{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+            <SidebarSeparator className="my-4 mx-2 opacity-50" />
+            <div className="px-2 mb-2 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider">
+              Ferramentas
+            </div>
+            <SidebarMenu>
+              {externalItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location.pathname === item.url}
+                    tooltip={item.title}
+                  >
+                    <Link to={item.url} className="flex items-center gap-3">
+                      <item.icon className="h-5 w-5 text-muted-foreground" />
+                      <span className="font-medium text-muted-foreground">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
