@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { MOCK_FINANCE, MOCK_AGENDA } from '@/lib/data'
+import { MOCK_FINANCE } from '@/lib/data'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid } from 'recharts'
 import {
@@ -60,6 +60,8 @@ export default function Index() {
     weeklyGoal,
     setWeeklyGoal,
     getEffectiveGoal,
+    meetings,
+    isGoogleConnected,
   } = useAppContext()
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false)
   const [isGoalOpen, setIsGoalOpen] = useState(false)
@@ -75,6 +77,11 @@ export default function Index() {
   const totalRevenue = MOCK_FINANCE.filter(
     (f) => f.type === 'Entrada' && (currentBranch === 'Consolidado' || f.branch === currentBranch),
   ).reduce((a, b) => a + b.value, 0)
+
+  const todayStr = new Date().toISOString().split('T')[0]
+  const todayMeetings = meetings
+    .filter((m) => m.date === todayStr && (isGoogleConnected || m.source === 'internal'))
+    .sort((a, b) => a.time.localeCompare(b.time))
 
   const handleCreateProject = (e: React.FormEvent) => {
     e.preventDefault()
@@ -241,8 +248,12 @@ export default function Index() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{MOCK_AGENDA.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Próxima às {MOCK_AGENDA[0]?.time}</p>
+            <div className="text-2xl font-bold">{todayMeetings.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {todayMeetings.length > 0
+                ? `Próxima às ${todayMeetings[0]?.time}`
+                : 'Sem compromissos hoje'}
+            </p>
           </CardContent>
         </Card>
       </div>

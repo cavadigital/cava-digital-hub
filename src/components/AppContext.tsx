@@ -90,6 +90,18 @@ export type ManagementLog = {
   details: string
 }
 
+export type Meeting = {
+  id: string
+  date: string
+  time: string
+  endTime: string
+  title: string
+  type: string
+  source: 'internal' | 'google'
+  description?: string
+  guests?: string
+}
+
 interface AppContextType {
   prompts: Prompt[]
   addPrompt: (p: Omit<Prompt, 'id'>) => void
@@ -129,6 +141,12 @@ interface AppContextType {
   removeHoliday: (id: string) => void
   managementLogs: ManagementLog[]
   getEffectiveGoal: (baseGoal: number, type: 'week' | 'month') => number
+  meetings: Meeting[]
+  addMeeting: (m: Omit<Meeting, 'id'>) => void
+  updateMeeting: (id: string, m: Partial<Meeting>) => void
+  deleteMeeting: (id: string) => void
+  isGoogleConnected: boolean
+  toggleGoogleConnection: () => void
 }
 
 const defaultClients: Client[] = [
@@ -264,6 +282,71 @@ export function AppProvider({ children }: { children: ReactNode }) {
         'Data: ' + new Date(Date.now() - 86400000).toLocaleDateString('pt-BR') + ' | Horas: 8h 10m',
     },
   ])
+
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false)
+  const [meetings, setMeetings] = useState<Meeting[]>(() => {
+    const today = new Date().toISOString().split('T')[0]
+    return [
+      {
+        id: '1',
+        date: today,
+        time: '09:00',
+        endTime: '10:00',
+        title: 'Kickoff Nova Nuvemshop',
+        type: 'Reunião Externa',
+        source: 'internal',
+        description: 'Revisão inicial do projeto de implantação da Nuvemshop.',
+        guests: 'cliente@loja.com',
+      },
+      {
+        id: '2',
+        date: today,
+        time: '11:30',
+        endTime: '12:15',
+        title: 'Sync de Performance - Lojas Renner',
+        type: 'Interna',
+        source: 'google',
+        description: 'Alinhamento de OKRs e melhoria da conversão no checkout mobile.',
+        guests: 'equipe@cavadigital.com.br',
+      },
+      {
+        id: '3',
+        date: today,
+        time: '14:00',
+        endTime: '15:00',
+        title: 'Apresentação de Layout',
+        type: 'Reunião Externa',
+        source: 'internal',
+        description: 'Design do novo checkout para aprovação do stakeholder.',
+        guests: 'aprovacao@cliente.com',
+      },
+      {
+        id: '4',
+        date: today,
+        time: '16:00',
+        endTime: '17:00',
+        title: 'Entrevista Dev Front-end',
+        type: 'RH',
+        source: 'google',
+        description: 'Entrevista técnica com candidato.',
+        guests: 'candidato@email.com',
+      },
+    ]
+  })
+
+  const toggleGoogleConnection = () => setIsGoogleConnected((prev) => !prev)
+
+  const addMeeting = (m: Omit<Meeting, 'id'>) => {
+    setMeetings((prev) => [...prev, { ...m, id: Math.random().toString(36).substring(2, 9) }])
+  }
+
+  const updateMeeting = (id: string, updates: Partial<Meeting>) => {
+    setMeetings((prev) => prev.map((m) => (m.id === id ? { ...m, ...updates } : m)))
+  }
+
+  const deleteMeeting = (id: string) => {
+    setMeetings((prev) => prev.filter((m) => m.id !== id))
+  }
 
   const addHoliday = (date: string, description: string) => {
     const d = new Date(date)
@@ -485,6 +568,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         removeHoliday,
         managementLogs,
         getEffectiveGoal,
+        meetings,
+        addMeeting,
+        updateMeeting,
+        deleteMeeting,
+        isGoogleConnected,
+        toggleGoogleConnection,
       }}
     >
       {children}

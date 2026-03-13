@@ -84,13 +84,6 @@ export const MOCK_FINANCE = [
   },
 ]
 
-export const MOCK_AGENDA = [
-  { id: '1', time: '09:00', title: 'Kickoff Nova Nuvemshop', type: 'Reunião Externa' },
-  { id: '2', time: '11:30', title: 'Sync de Performance', type: 'Interna' },
-  { id: '3', time: '14:00', title: 'Apresentação de Layout', type: 'Reunião Externa' },
-  { id: '4', time: '16:00', title: 'Entrevista Dev Front-end', type: 'RH' },
-]
-
 export const MOCK_EMPLOYEES = [
   {
     id: '1',
