@@ -1,11 +1,31 @@
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { MOCK_FINANCE, MOCK_AGENDA } from '@/lib/data'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid } from 'recharts'
-import { ArrowUpRight, ArrowDownRight, Clock, Plus, MonitorPlay, Zap } from 'lucide-react'
+import { ArrowUpRight, Clock, Plus, MonitorPlay, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useBranch } from '@/components/BranchContext'
 import { useAppContext } from '@/components/AppContext'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { toast } from 'sonner'
 
 const chartData = [
   { month: 'Jan', receitas: 45000, despesas: 32000 },
@@ -18,7 +38,9 @@ const chartData = [
 
 export default function Index() {
   const { currentBranch } = useBranch()
-  const { projects } = useAppContext()
+  const { projects, clients, addProject } = useAppContext()
+  const [isNewProjectOpen, setIsNewProjectOpen] = useState(false)
+  const [newProject, setNewProject] = useState({ title: '', client: '', description: '' })
 
   const activeProjects = projects.filter(
     (p) =>
@@ -31,6 +53,26 @@ export default function Index() {
     (f) => f.type === 'Entrada' && (currentBranch === 'Consolidado' || f.branch === currentBranch),
   ).reduce((a, b) => a + b.value, 0)
 
+  const handleCreateProject = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newProject.title || !newProject.client) {
+      toast.error('Preencha os campos obrigatórios.')
+      return
+    }
+
+    addProject({
+      title: newProject.title,
+      client: newProject.client,
+      description: newProject.description,
+      status: 'Backlog',
+      branch: currentBranch === 'Consolidado' ? 'Curitiba' : currentBranch,
+    })
+
+    toast.success('Projeto criado com sucesso!')
+    setIsNewProjectOpen(false)
+    setNewProject({ title: '', client: '', description: '' })
+  }
+
   return (
     <div className="space-y-8 animate-fade-in-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -41,7 +83,7 @@ export default function Index() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button className="shadow-elevation">
+          <Button className="shadow-elevation" onClick={() => setIsNewProjectOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> Novo Projeto
           </Button>
           <Button variant="secondary">
@@ -208,6 +250,67 @@ export default function Index() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={isNewProjectOpen} onOpenChange={setIsNewProjectOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <form onSubmit={handleCreateProject}>
+            <DialogHeader>
+              <DialogTitle>Novo Projeto</DialogTitle>
+              <DialogDescription>
+                Preencha os detalhes abaixo para iniciar um novo projeto ou campanha.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="title">
+                  Nome do Projeto <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="title"
+                  placeholder="Ex: Campanha Dia das Mães"
+                  value={newProject.title}
+                  onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="client">
+                  Cliente <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={newProject.client}
+                  onValueChange={(val) => setNewProject({ ...newProject, client: val })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.name}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="desc">Objetivo/Descrição</Label>
+                <Textarea
+                  id="desc"
+                  placeholder="Descreva brevemente o objetivo..."
+                  value={newProject.description}
+                  onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsNewProjectOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit">Criar Projeto</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

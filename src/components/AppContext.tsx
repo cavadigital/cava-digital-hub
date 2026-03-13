@@ -50,6 +50,7 @@ export type Project = {
   client: string
   status: string
   branch: string
+  description?: string
 }
 
 interface AppContextType {
@@ -72,6 +73,7 @@ interface AppContextType {
   updateNotificationSettings: (settings: Partial<NotificationSettings>) => void
   projects: Project[]
   updateProjectStatus: (id: string, status: string) => void
+  addProject: (p: Omit<Project, 'id'>) => void
 }
 
 const defaultClients: Client[] = [
@@ -215,6 +217,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setProjects(projects.map((p) => (p.id === id ? { ...p, status } : p)))
   }
 
+  const addProject = (p: Omit<Project, 'id'>) => {
+    setProjects([...projects, { ...p, id: Math.random().toString(36).substr(2, 9) }])
+  }
+
   return (
     <AppContext.Provider
       value={{
@@ -231,6 +237,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateNotificationSettings,
         projects,
         updateProjectStatus,
+        addProject,
       }}
     >
       {children}
