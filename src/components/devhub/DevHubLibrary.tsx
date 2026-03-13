@@ -1,19 +1,6 @@
 import { useState } from 'react'
-import { useAppContext, UIComponent } from '@/components/AppContext'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Plus, Eye, Download, Code, Trash2 } from 'lucide-react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -21,167 +8,109 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useAppContext, UIComponent } from '@/components/AppContext'
+import { Layers, Zap, Plus, ArrowRight } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 
 export function DevHubLibrary({ onInject }: { onInject: (c: UIComponent) => void }) {
-  const { uiComponents, addUIComponent, deleteUIComponent } = useAppContext()
-  const [previewComp, setPreviewComp] = useState<UIComponent | null>(null)
-  const [isAdding, setIsAdding] = useState(false)
-  const [newComp, setNewComp] = useState<Partial<UIComponent>>({
-    platform: 'Wake',
-    category: 'Buttons',
-    code: { html: '', css: '', js: '' },
-  })
+  const { uiComponents } = useAppContext()
+  const [objective, setObjective] = useState<string>('')
 
-  const handleAdd = () => {
-    if (newComp.name && newComp.code) {
-      addUIComponent({
-        name: newComp.name,
-        platform: newComp.platform || 'Wake',
-        category: newComp.category || 'Buttons',
-        code: newComp.code,
-      })
-      setIsAdding(false)
-      setNewComp({ platform: 'Wake', category: 'Buttons', code: { html: '', css: '', js: '' } })
-    }
+  // Smart Bundle Logic based on objective
+  const getBundleRecommendation = () => {
+    if (objective === 'flash-sale') return uiComponents // Mock: Returns all (Header Promo + WA Float)
+    if (objective === 'lead-gen') return uiComponents.filter((c) => c.category === 'Buttons')
+    return []
   }
 
+  const recommendedBundle = getBundleRecommendation()
+
   return (
-    <div className="space-y-6 mt-2">
-      <div className="flex justify-between items-center bg-muted/30 p-4 rounded-lg border">
-        <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Code className="h-5 w-5 text-primary" /> Repositório de UI
-          </h2>
-          <p className="text-sm text-muted-foreground">Blocos validados prontos para injeção.</p>
-        </div>
-        <Dialog open={isAdding} onOpenChange={setIsAdding}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" /> Novo Componente
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Salvar Componente na Biblioteca</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Nome do Componente</Label>
-                  <Input
-                    placeholder="Ex: Carrossel V2"
-                    value={newComp.name || ''}
-                    onChange={(e) => setNewComp({ ...newComp, name: e.target.value })}
-                  />
+    <div className="space-y-8 animate-fade-in">
+      <Card className="bg-primary/5 border-primary/20 shadow-elevation">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-xl flex items-center gap-2">
+            <Zap className="h-5 w-5 text-primary fill-primary" /> Smart Bundles Assistant
+          </CardTitle>
+          <CardDescription>
+            Selecione o objetivo da campanha para receber combinações otimizadas de componentes.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <div className="w-full sm:w-72">
+              <Select value={objective} onValueChange={setObjective}>
+                <SelectTrigger className="bg-background shadow-sm border-primary/30">
+                  <SelectValue placeholder="Objetivo de Marketing" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="flash-sale">Promoção / Venda Relâmpago</SelectItem>
+                  <SelectItem value="lead-gen">Geração de Leads</SelectItem>
+                  <SelectItem value="awareness">Brand Awareness</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {recommendedBundle.length > 0 && (
+              <div className="flex-1 flex flex-col sm:flex-row gap-4 items-center bg-background p-3 rounded-lg border border-primary/20 shadow-sm w-full animate-fade-in-up">
+                <div className="flex-1 flex gap-2 flex-wrap">
+                  <Badge variant="secondary" className="bg-primary/10 text-primary">
+                    Pacote Sugerido:
+                  </Badge>
+                  {recommendedBundle.map((c) => (
+                    <Badge key={c.id} variant="outline" className="text-[10px] uppercase">
+                      {c.name}
+                    </Badge>
+                  ))}
                 </div>
-                <div className="space-y-2">
-                  <Label>Plataforma</Label>
-                  <Select
-                    value={newComp.platform}
-                    onValueChange={(v) => setNewComp({ ...newComp, platform: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Wake">Wake</SelectItem>
-                      <SelectItem value="Tray">Tray</SelectItem>
-                      <SelectItem value="Nuvemshop">Nuvemshop</SelectItem>
-                      <SelectItem value="Todas">Todas</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Categoria</Label>
-                <Select
-                  value={newComp.category}
-                  onValueChange={(v) => setNewComp({ ...newComp, category: v })}
+                <Button
+                  onClick={() => recommendedBundle.forEach((c) => onInject(c))}
+                  className="w-full sm:w-auto shadow-md"
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Headers">Headers</SelectItem>
-                    <SelectItem value="Footers">Footers</SelectItem>
-                    <SelectItem value="Carousels">Carousels</SelectItem>
-                    <SelectItem value="Buttons">Buttons</SelectItem>
-                    <SelectItem value="Modals">Modals</SelectItem>
-                  </SelectContent>
-                </Select>
+                  Injetar Bundle Completo <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label>HTML</Label>
-                <Textarea
-                  className="font-mono text-xs h-20"
-                  value={newComp.code?.html || ''}
-                  onChange={(e) =>
-                    setNewComp({ ...newComp, code: { ...newComp.code!, html: e.target.value } })
-                  }
-                />
-              </div>
-              <Button onClick={handleAdd}>Salvar Componente</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {uiComponents.map((comp) => (
-          <Card
-            key={comp.id}
-            className="shadow-subtle hover:border-primary/50 transition-all group"
-          >
-            <CardHeader className="pb-3 relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 h-7 w-7"
-                onClick={() => deleteUIComponent(comp.id)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-              <div className="flex justify-between items-start">
-                <Badge variant="outline">{comp.platform}</Badge>
-                <Badge variant="secondary" className="text-[10px]">
-                  {comp.category}
-                </Badge>
-              </div>
-              <CardTitle className="text-base mt-3 leading-snug">{comp.name}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                className="flex-1"
-                onClick={() => setPreviewComp(comp)}
-              >
-                <Eye className="w-4 h-4 mr-2" /> Preview
-              </Button>
-              <Button size="sm" className="flex-1" onClick={() => onInject(comp)}>
-                <Download className="w-4 h-4 mr-2" /> Injetar
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+      <div>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Layers className="h-5 w-5" /> Componentes Individuais
+        </h3>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {uiComponents.map((comp) => (
+            <Card
+              key={comp.id}
+              className="shadow-subtle hover:shadow-md transition-all group border-l-4 border-l-transparent hover:border-l-primary"
+            >
+              <CardContent className="p-5 flex flex-col h-full">
+                <div className="flex justify-between items-start mb-3">
+                  <Badge variant="secondary" className="text-[10px]">
+                    {comp.category}
+                  </Badge>
+                  <Badge variant="outline" className="text-[10px]">
+                    {comp.platform}
+                  </Badge>
+                </div>
+                <h4 className="font-semibold text-base mb-1 group-hover:text-primary transition-colors">
+                  {comp.name}
+                </h4>
+                <div className="mt-auto pt-4">
+                  <Button
+                    variant="secondary"
+                    className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                    onClick={() => onInject(comp)}
+                  >
+                    <Plus className="mr-2 h-4 w-4" /> Injetar no Copilot
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
-
-      <Dialog open={!!previewComp} onOpenChange={(open) => !open && setPreviewComp(null)}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Preview Renderizado: {previewComp?.name}</DialogTitle>
-          </DialogHeader>
-          {previewComp && (
-            <div className="mt-4 border rounded-md bg-muted/10 overflow-hidden relative min-h-[350px]">
-              <iframe
-                title="preview"
-                className="w-full h-[350px] border-none"
-                srcDoc={`<html><head><style>${previewComp.code.css}</style></head><body style="margin:0;padding:20px;display:flex;justify-content:center;align-items:center;min-height:100vh;">${previewComp.code.html}<script>${previewComp.code.js}</script></body></html>`}
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

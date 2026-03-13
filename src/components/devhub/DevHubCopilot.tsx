@@ -1,222 +1,196 @@
 import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { UploadCloud, Code, Loader2, Copy, Check, Rocket, Shield } from 'lucide-react'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { SavePromptDialog, SmartPromptSuggestions } from '@/components/PromptsLibrary'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { CodeResult } from '@/pages/DevHub'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Loader2, Play, Code, AlertTriangle, ShieldAlert, CheckCircle2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { Badge } from '@/components/ui/badge'
 
-interface DevHubCopilotProps {
-  codeResult: CodeResult | null
-  setCodeResult: (res: CodeResult | null) => void
+interface Issue {
+  type: 'error' | 'warning'
+  msg: string
 }
 
-export function DevHubCopilot({ codeResult, setCodeResult }: DevHubCopilotProps) {
-  const [platform, setPlatform] = useState('Wake')
-  const [devPrompt, setDevPrompt] = useState('')
-  const [isConverting, setIsConverting] = useState(false)
-  const [copiedTab, setCopiedTab] = useState<string | null>(null)
-  const [deployModalOpen, setDeployModalOpen] = useState(false)
-  const [deployStatus, setDeployStatus] = useState<
-    'idle' | 'verifying' | 'verified' | 'pushing' | 'success'
-  >('idle')
+export function DevHubCopilot({
+  codeResult,
+  setCodeResult,
+}: {
+  codeResult: CodeResult | null
+  setCodeResult: (c: CodeResult) => void
+}) {
+  const [prompt, setPrompt] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [issues, setIssues] = useState<Issue[]>([])
+  const [showModal, setShowModal] = useState(false)
 
-  const handleConvert = () => {
-    setIsConverting(true)
+  const handleGenerate = () => {
+    setIsGenerating(true)
     setTimeout(() => {
+      // Mock generated code with deliberate SEO/Perf issues to demonstrate the CAVA Linter
       setCodeResult({
-        html: `<!-- Configuração para ${platform} -->\n<div class="cava-custom-layout">\n  <header class="cava-header">...</header>\n</div>`,
-        css: `/* Estilos Otimizados para ${platform} */\n:root { --brand-primary: #ff4b4b; }\n.cava-custom-layout { font-family: sans-serif; }`,
-        js: `document.addEventListener('DOMContentLoaded', () => { console.log('Init ${platform}'); });`,
+        html: '<div class="cava-bundle">\n  <img src="banner.jpg" />\n  <h1>Promoção Especial</h1>\n  <h1>Aproveite Hoje</h1>\n  <script src="tracker.js"></script>\n  <button>Comprar</button>\n</div>',
+        css: '.cava-bundle { display: flex; flex-direction: column; }',
+        js: 'console.log("Bundle loaded");',
       })
-      setIsConverting(false)
-    }, 2000)
+      setIsGenerating(false)
+    }, 1500)
   }
 
-  const handleCopy = (text: string, tab: string) => {
-    navigator.clipboard.writeText(text)
-    setCopiedTab(tab)
-    setTimeout(() => setCopiedTab(null), 2000)
+  const runLinter = () => {
+    const found: Issue[] = []
+    const html = codeResult?.html || ''
+
+    if (html.includes('<img') && !html.match(/<img[^>]*alt=/))
+      found.push({ type: 'error', msg: 'Imagens sem atributo "alt" (Impacto SEO)' })
+    if (html.includes('<img') && !html.match(/<img[^>]*loading="lazy"/))
+      found.push({ type: 'warning', msg: 'Imagens sem lazy-loading (Impacto LCP)' })
+    if ((html.match(/<h1/g) || []).length > 1)
+      found.push({
+        type: 'warning',
+        msg: 'Múltiplas tags <h1> na mesma estrutura (Hierarquia SEO)',
+      })
+    if (html.includes('<script') && !html.match(/<script[^>]*(defer|async)/))
+      found.push({ type: 'error', msg: 'Script bloqueante de renderização detectado' })
+
+    setIssues(found)
+    setShowModal(true)
+  }
+
+  const handleDeployForce = () => {
+    setShowModal(false)
+    toast.success('Deploy forçado concluído.', {
+      description: 'Código injetado com avisos ignorados.',
+    })
   }
 
   return (
-    <div className="grid lg:grid-cols-12 gap-8 mt-2">
-      <div className="lg:col-span-5 space-y-6">
-        <Card className="shadow-subtle border-border/50">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-xl">AI Code Configuration</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Layout Design (XD/Figma Export)</Label>
-              <div className="border-2 border-dashed border-primary/30 rounded-xl p-6 text-center bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer group">
-                <UploadCloud className="h-6 w-6 mx-auto text-primary mb-2 group-hover:scale-110 transition-transform" />
-                <p className="text-sm font-semibold mb-1">Arraste o arquivo aqui</p>
-              </div>
-            </div>
+    <div className="grid lg:grid-cols-2 gap-6 h-[600px]">
+      <Card className="flex flex-col shadow-subtle border-t-4 border-t-primary h-full">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Code className="h-5 w-5 text-primary" /> Copilot IA
+          </CardTitle>
+          <CardDescription>Descreva a seção ou componente desejado.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex-1 flex flex-col gap-4">
+          <Textarea
+            className="flex-1 resize-none bg-muted/30"
+            placeholder="Ex: Crie um modal de captura de leads com fundo escuro..."
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+          />
+          <Button
+            onClick={handleGenerate}
+            disabled={isGenerating || !prompt}
+            className="h-12 text-base font-semibold shadow-elevation"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Gerando...
+              </>
+            ) : (
+              <>
+                <Play className="mr-2 h-5 w-5" /> Gerar Código
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
 
-            <div className="space-y-2">
-              <Label>Plataforma Alvo</Label>
-              <Select value={platform} onValueChange={setPlatform}>
-                <SelectTrigger className="w-full bg-background">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Wake">Wake</SelectItem>
-                  <SelectItem value="Tray">Tray</SelectItem>
-                  <SelectItem value="Nuvemshop">Nuvemshop</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2 pt-2">
-              <div className="flex justify-between items-center mb-1">
-                <Label>Instruções (Prompt)</Label>
-                <SavePromptDialog currentText={devPrompt} defaultCategory={platform} />
-              </div>
-              <Textarea
-                value={devPrompt}
-                onChange={(e) => setDevPrompt(e.target.value)}
-                placeholder="Detalhes específicos para a IA..."
-                className="h-24 resize-none text-sm"
-              />
-              <SmartPromptSuggestions category={platform} onSelect={setDevPrompt} />
-            </div>
-
+      <Card className="flex flex-col shadow-subtle bg-muted/10 h-full relative overflow-hidden">
+        <CardHeader className="pb-2 flex flex-row items-center justify-between bg-muted/30 border-b">
+          <CardTitle className="text-sm font-mono text-muted-foreground">Editor Preview</CardTitle>
+          {codeResult && (
             <Button
-              className="w-full font-bold shadow-md"
-              size="lg"
-              onClick={handleConvert}
-              disabled={isConverting}
+              size="sm"
+              onClick={runLinter}
+              className="bg-success hover:bg-success/90 text-white shadow-sm"
             >
-              {isConverting ? (
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              ) : (
-                <Code className="mr-2 h-5 w-5" />
-              )}
-              {isConverting ? 'Processando...' : 'Gerar Código'}
+              <ShieldAlert className="mr-2 h-4 w-4" /> Validar & Deploy (Linter)
             </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="lg:col-span-7">
-        {codeResult ? (
-          <Card className="h-full shadow-elevation border-primary/20 bg-background overflow-hidden flex flex-col min-h-[500px]">
-            <CardHeader className="border-b bg-muted/30 pb-4 flex flex-row items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Check className="h-5 w-5 text-success" /> Código Gerado ({platform})
-              </CardTitle>
-              <Button
-                onClick={() => setDeployModalOpen(true)}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
-              >
-                <Rocket className="mr-2 h-4 w-4" /> Direct Deploy
-              </Button>
-            </CardHeader>
-            <CardContent className="p-0 flex-1 flex flex-col">
-              <Tabs defaultValue="html" className="flex-1 flex flex-col rounded-none">
-                <TabsList className="w-full justify-start rounded-none border-b bg-muted/10 h-12 px-4">
-                  <TabsTrigger value="html">HTML</TabsTrigger>
-                  <TabsTrigger value="css">CSS</TabsTrigger>
-                  <TabsTrigger value="js">Javascript</TabsTrigger>
-                </TabsList>
-                <div className="flex-1 relative bg-[#0d1117] p-6 text-sm font-mono overflow-auto h-[400px]">
-                  {['html', 'css', 'js'].map((tab) => (
-                    <TabsContent key={tab} value={tab} className="m-0 h-full">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="absolute top-4 right-4 z-10 opacity-70 hover:opacity-100 bg-white/10 text-white border-none"
-                        onClick={() => handleCopy(codeResult[tab as keyof CodeResult], tab)}
-                      >
-                        {copiedTab === tab ? (
-                          <Check className="h-4 w-4 mr-2" />
-                        ) : (
-                          <Copy className="h-4 w-4 mr-2" />
-                        )}{' '}
-                        Copiar
-                      </Button>
-                      <pre
-                        className={`text-[#${tab === 'html' ? 'e6edf3' : tab === 'css' ? '7ee787' : '79c0ff'}]`}
-                      >
-                        <code>{codeResult[tab as keyof CodeResult]}</code>
-                      </pre>
-                    </TabsContent>
-                  ))}
-                </div>
-              </Tabs>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="h-full min-h-[500px] shadow-subtle border-dashed bg-muted/10 flex flex-col items-center justify-center p-12 text-center">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-6">
-              <Code className="h-8 w-8 text-muted-foreground/40" />
+          )}
+        </CardHeader>
+        <CardContent className="flex-1 p-0 overflow-auto text-xs font-mono">
+          {codeResult ? (
+            <div className="p-4 space-y-4">
+              <div>
+                <span className="text-primary font-bold block mb-1">HTML</span>
+                <pre className="bg-[#1e1e1e] text-[#d4d4d4] p-3 rounded-md overflow-x-auto">
+                  {codeResult.html}
+                </pre>
+              </div>
+              <div>
+                <span className="text-secondary-foreground font-bold block mb-1">CSS</span>
+                <pre className="bg-[#1e1e1e] text-[#d4d4d4] p-3 rounded-md overflow-x-auto">
+                  {codeResult.css}
+                </pre>
+              </div>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Aguardando Configurações</h3>
-            <p className="text-muted-foreground max-w-md">
-              Forneça as instruções para a IA gerar código ou importe blocos da Component Library.
-            </p>
-          </Card>
-        )}
-      </div>
+          ) : (
+            <div className="h-full flex items-center justify-center text-muted-foreground/50 p-6 text-center">
+              Nenhum código gerado ainda.
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      <Dialog
-        open={deployModalOpen}
-        onOpenChange={(o) => {
-          setDeployModalOpen(o)
-          if (!o) setDeployStatus('idle')
-        }}
-      >
-        <DialogContent>
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Rocket className="h-5 w-5 text-purple-600" /> Direct Deploy Integration
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              {issues.length > 0 ? (
+                <AlertTriangle className="h-6 w-6 text-warning" />
+              ) : (
+                <CheckCircle2 className="h-6 w-6 text-success" />
+              )}
+              CAVA Technical Linter
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>API Key</Label>
-              <Input type="password" placeholder="••••••••" />
-            </div>
-            <div className="flex gap-3 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setDeployStatus('verifying')
-                  setTimeout(() => setDeployStatus('verified'), 1000)
-                }}
-                disabled={deployStatus !== 'idle'}
-                className="flex-1"
-              >
-                {deployStatus === 'idle' ? 'Conectar' : 'Conectado'}
-              </Button>
-              <Button
-                onClick={() => {
-                  setDeployStatus('pushing')
-                  setTimeout(() => setDeployStatus('success'), 1500)
-                }}
-                disabled={deployStatus !== 'verified'}
-                className="flex-1 bg-purple-600 text-white hover:bg-purple-700"
-              >
-                {deployStatus === 'pushing' ? (
-                  <Loader2 className="animate-spin w-4 h-4 mr-2" />
-                ) : null}{' '}
-                Push Code
-              </Button>
-            </div>
+          <div className="py-4 space-y-4">
+            {issues.length === 0 ? (
+              <div className="p-4 bg-success/10 text-success border border-success/20 rounded-md">
+                Análise concluída com sucesso! Nenhum problema de SEO ou Performance detectado.
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  O código gerado contém práticas que podem impactar a performance ou SEO da loja:
+                </p>
+                <div className="space-y-2">
+                  {issues.map((iss, i) => (
+                    <div
+                      key={i}
+                      className={`p-3 rounded-md border flex items-start gap-3 ${iss.type === 'error' ? 'bg-destructive/10 border-destructive/20 text-destructive' : 'bg-warning/10 border-warning/20 text-yellow-700'}`}
+                    >
+                      <AlertTriangle className="h-5 w-5 shrink-0" />
+                      <div className="text-sm font-medium">{iss.msg}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
+          <DialogFooter>
+            {issues.length > 0 && (
+              <Button variant="outline" onClick={() => setShowModal(false)}>
+                Cancelar & Corrigir
+              </Button>
+            )}
+            <Button
+              onClick={handleDeployForce}
+              variant={issues.length > 0 ? 'destructive' : 'default'}
+            >
+              {issues.length > 0 ? 'Ignorar Alertas e Fazer Deploy' : 'Publicar Agora'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
