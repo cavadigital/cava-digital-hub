@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react'
+import { MOCK_PROJECTS } from '@/lib/data'
 
 export type AssetStatus = 'Pending' | 'Approved' | 'Revision Requested'
 
@@ -40,6 +41,14 @@ export type NotificationSettings = {
   deployErrorSlack: boolean
 }
 
+export type Project = {
+  id: string
+  title: string
+  client: string
+  status: string
+  branch: string
+}
+
 interface AppContextType {
   prompts: Prompt[]
   addPrompt: (p: Omit<Prompt, 'id'>) => void
@@ -57,6 +66,8 @@ interface AppContextType {
   deleteUIComponent: (id: string) => void
   notificationSettings: NotificationSettings
   updateNotificationSettings: (settings: Partial<NotificationSettings>) => void
+  projects: Project[]
+  updateProjectStatus: (id: string, status: string) => void
 }
 
 const defaultClients: Client[] = [
@@ -137,6 +148,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(
     defaultNotificationSettings,
   )
+  const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS)
 
   const addPrompt = (p: Omit<Prompt, 'id'>) => {
     setPrompts([...prompts, { ...p, id: Math.random().toString(36).substr(2, 9) }])
@@ -185,6 +197,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setNotificationSettings({ ...notificationSettings, ...settings })
   }
 
+  const updateProjectStatus = (id: string, status: string) => {
+    setProjects(projects.map((p) => (p.id === id ? { ...p, status } : p)))
+  }
+
   return (
     <AppContext.Provider
       value={{
@@ -198,6 +214,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         deleteUIComponent,
         notificationSettings,
         updateNotificationSettings,
+        projects,
+        updateProjectStatus,
       }}
     >
       {children}

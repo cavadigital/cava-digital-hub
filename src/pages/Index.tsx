@@ -1,10 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { MOCK_FINANCE, MOCK_PROJECTS, MOCK_AGENDA } from '@/lib/data'
+import { MOCK_FINANCE, MOCK_AGENDA } from '@/lib/data'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid } from 'recharts'
 import { ArrowUpRight, ArrowDownRight, Clock, Plus, MonitorPlay, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useBranch } from '@/components/BranchContext'
+import { useAppContext } from '@/components/AppContext'
 
 const chartData = [
   { month: 'Jan', receitas: 45000, despesas: 32000 },
@@ -17,11 +18,15 @@ const chartData = [
 
 export default function Index() {
   const { currentBranch } = useBranch()
+  const { projects } = useAppContext()
 
-  const activeProjects = MOCK_PROJECTS.filter(
+  const activeProjects = projects.filter(
     (p) =>
-      p.status !== 'Finalizado' && (currentBranch === 'Consolidado' || p.branch === currentBranch),
+      p.status !== 'Finalizado' &&
+      p.status !== 'Aprovado' &&
+      (currentBranch === 'Consolidado' || p.branch === currentBranch),
   ).length
+
   const totalRevenue = MOCK_FINANCE.filter(
     (f) => f.type === 'Entrada' && (currentBranch === 'Consolidado' || f.branch === currentBranch),
   ).reduce((a, b) => a + b.value, 0)

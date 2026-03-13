@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,6 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Link } from 'react-router-dom'
 import {
   Wand2,
@@ -57,6 +58,12 @@ export default function Studio() {
   // Real-time Style Editor State
   const [bundleColor, setBundleColor] = useState('#E3000F')
   const [bundleFont, setBundleFont] = useState('Inter')
+
+  // Copywriting State
+  const [offer, setOffer] = useState('')
+  const [audience, setAudience] = useState('')
+  const [copyVariations, setCopyVariations] = useState<{ headline: string; body: string }[]>([])
+  const [isGeneratingCopy, setIsGeneratingCopy] = useState(false)
 
   const handleClientChange = (val: string) => {
     setClientId(val)
@@ -134,6 +141,27 @@ export default function Studio() {
     }, 2000)
   }
 
+  const handleGenerateCopy = () => {
+    setIsGeneratingCopy(true)
+    setTimeout(() => {
+      setCopyVariations([
+        {
+          headline: `Oferta Exclusiva: ${offer}!`,
+          body: `Para você que é ${audience}, aproveite essa oportunidade única para transformar seu dia a dia com a CAVA Digital.`,
+        },
+        {
+          headline: `Não Perca: ${offer} OFF`,
+          body: `Renove seu estilo hoje mesmo. O público de ${audience} já está aproveitando os melhores descontos do ano!`,
+        },
+        {
+          headline: `Últimas Horas: ${offer}`,
+          body: `A oportunidade perfeita para ${audience} economizar com inteligência e praticidade. Garanta agora!`,
+        },
+      ])
+      setIsGeneratingCopy(false)
+    }, 1500)
+  }
+
   const handleSendToAdManager = (platform: string) => {
     toast.success(`Enviado com sucesso para ${platform}!`, {
       description: 'O criativo está sincronizado e pronto para veiculação.',
@@ -160,103 +188,206 @@ export default function Studio() {
 
       <Card className="shrink-0 shadow-md border-t-4 border-t-primary bg-muted/10">
         <CardContent className="p-4 md:p-6 flex flex-col gap-4">
-          <div className="flex flex-col md:flex-row gap-4 items-end">
-            <div className="space-y-2 w-full md:w-48 shrink-0">
-              <Label className="text-xs font-semibold uppercase">Tipo de Projeto</Label>
-              <Select value={projectType} onValueChange={setProjectType}>
-                <SelectTrigger className="bg-background shadow-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="banner">Performance Banner</SelectItem>
-                  <SelectItem value="social">Social Media</SelectItem>
-                  <SelectItem value="bundle">Smart Bundle</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <Tabs defaultValue="visual" className="w-full">
+            <TabsList className="mb-4 bg-background/50 backdrop-blur-sm border shadow-sm h-10">
+              <TabsTrigger
+                value="visual"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                Visual & Design
+              </TabsTrigger>
+              <TabsTrigger
+                value="copywriting"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                Smart Copywriting
+              </TabsTrigger>
+            </TabsList>
 
-            <div className="space-y-2 w-full md:w-auto flex-1 max-w-[320px]">
-              <Label className="text-xs font-semibold uppercase">Dimensões</Label>
-              <div className="flex gap-2">
-                <Select value={preset} onValueChange={setPreset}>
-                  <SelectTrigger className="bg-background shadow-sm flex-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1080x1080">Square 1080x1080</SelectItem>
-                    <SelectItem value="1080x1920">Story 1080x1920</SelectItem>
-                    <SelectItem value="1920x1080">Wide 1920x1080</SelectItem>
-                    <SelectItem value="custom">Customizado</SelectItem>
-                  </SelectContent>
-                </Select>
-                {preset === 'custom' && (
+            <TabsContent value="visual" className="m-0 space-y-4">
+              <div className="flex flex-col md:flex-row gap-4 items-end">
+                <div className="space-y-2 w-full md:w-48 shrink-0">
+                  <Label className="text-xs font-semibold uppercase">Tipo de Projeto</Label>
+                  <Select value={projectType} onValueChange={setProjectType}>
+                    <SelectTrigger className="bg-background shadow-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="banner">Performance Banner</SelectItem>
+                      <SelectItem value="social">Social Media</SelectItem>
+                      <SelectItem value="bundle">Smart Bundle</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2 w-full md:w-auto flex-1 max-w-[320px]">
+                  <Label className="text-xs font-semibold uppercase">Dimensões</Label>
+                  <div className="flex gap-2">
+                    <Select value={preset} onValueChange={setPreset}>
+                      <SelectTrigger className="bg-background shadow-sm flex-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1080x1080">Square 1080x1080</SelectItem>
+                        <SelectItem value="1080x1920">Story 1080x1920</SelectItem>
+                        <SelectItem value="1920x1080">Wide 1920x1080</SelectItem>
+                        <SelectItem value="custom">Customizado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {preset === 'custom' && (
+                      <Input
+                        placeholder="1200x400"
+                        value={customDims}
+                        onChange={(e) => setCustomDims(e.target.value)}
+                        className="w-[110px] bg-background shadow-sm"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2 w-full md:w-56 shrink-0">
+                  <Label className="text-xs font-semibold uppercase">Brand Kit (Cliente)</Label>
+                  <Select value={clientId} onValueChange={handleClientChange}>
+                    <SelectTrigger className="bg-background shadow-sm">
+                      <SelectValue placeholder="Nenhum" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum</SelectItem>
+                      {clients.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex flex-col space-y-3 w-full md:w-auto pb-1 shrink-0 px-2">
+                  <Label className="text-xs font-semibold uppercase opacity-0 hidden md:block">
+                    Variações A/B
+                  </Label>
+                  <div className="flex items-center space-x-2">
+                    <Switch id="ab-test" checked={isABTesting} onCheckedChange={setIsABTesting} />
+                    <Label
+                      htmlFor="ab-test"
+                      className="text-sm font-semibold cursor-pointer flex items-center gap-1.5"
+                    >
+                      <SplitSquareHorizontal className="h-4 w-4 text-primary" /> Variações A/B
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col md:flex-row gap-4 items-end">
+                <div className="space-y-2 flex-1 w-full">
+                  <Label className="text-xs font-semibold uppercase">Prompt Criativo</Label>
                   <Input
-                    placeholder="1200x400"
-                    value={customDims}
-                    onChange={(e) => setCustomDims(e.target.value)}
-                    className="w-[110px] bg-background shadow-sm"
+                    placeholder="Descreva o cenário e objetivos..."
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    className="bg-background shadow-sm"
                   />
-                )}
-              </div>
-            </div>
+                </div>
 
-            <div className="space-y-2 w-full md:w-56 shrink-0">
-              <Label className="text-xs font-semibold uppercase">Brand Kit (Cliente)</Label>
-              <Select value={clientId} onValueChange={handleClientChange}>
-                <SelectTrigger className="bg-background shadow-sm">
-                  <SelectValue placeholder="Nenhum" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex flex-col space-y-3 w-full md:w-auto pb-1 shrink-0 px-2">
-              <Label className="text-xs font-semibold uppercase opacity-0 hidden md:block">
-                Variações A/B
-              </Label>
-              <div className="flex items-center space-x-2">
-                <Switch id="ab-test" checked={isABTesting} onCheckedChange={setIsABTesting} />
-                <Label
-                  htmlFor="ab-test"
-                  className="text-sm font-semibold cursor-pointer flex items-center gap-1.5"
+                <Button
+                  onClick={handleGenerate}
+                  disabled={isGenerating || !prompt}
+                  className="w-full md:w-56 h-10 shadow-elevation font-semibold shrink-0"
                 >
-                  <SplitSquareHorizontal className="h-4 w-4 text-primary" /> Variações A/B
-                </Label>
+                  {isGenerating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Wand2 className="mr-2 h-4 w-4" />
+                  )}
+                  Gerar Asset{isABTesting ? 's' : ''}
+                </Button>
               </div>
-            </div>
-          </div>
+            </TabsContent>
 
-          <div className="flex flex-col md:flex-row gap-4 items-end">
-            <div className="space-y-2 flex-1 w-full">
-              <Label className="text-xs font-semibold uppercase">Prompt Criativo</Label>
-              <Input
-                placeholder="Descreva o cenário e objetivos..."
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="bg-background shadow-sm"
-              />
-            </div>
+            <TabsContent value="copywriting" className="m-0 space-y-6">
+              <div className="flex flex-col md:flex-row gap-4 items-end bg-background p-4 rounded-lg shadow-sm border">
+                <div className="space-y-2 flex-1 w-full">
+                  <Label className="text-xs font-semibold uppercase">Campaign Offer</Label>
+                  <Input
+                    placeholder="Ex: 20% OFF na Black Friday"
+                    value={offer}
+                    onChange={(e) => setOffer(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2 flex-1 w-full">
+                  <Label className="text-xs font-semibold uppercase">Target Audience</Label>
+                  <Input
+                    placeholder="Ex: Entusiastas de moda 25-40"
+                    value={audience}
+                    onChange={(e) => setAudience(e.target.value)}
+                  />
+                </div>
+                <Button
+                  onClick={handleGenerateCopy}
+                  disabled={isGeneratingCopy || !offer || !audience}
+                  className="w-full md:w-56 h-10 shadow-md font-semibold shrink-0"
+                >
+                  {isGeneratingCopy ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Wand2 className="mr-2 h-4 w-4" />
+                  )}
+                  Gerar Copy IA
+                </Button>
+              </div>
 
-            <Button
-              onClick={handleGenerate}
-              disabled={isGenerating || !prompt}
-              className="w-full md:w-56 h-10 shadow-elevation font-semibold shrink-0"
-            >
-              {isGenerating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Wand2 className="mr-2 h-4 w-4" />
+              {copyVariations.length > 0 && (
+                <div className="grid gap-4 md:grid-cols-3 animate-fade-in-up">
+                  {copyVariations.map((copy, idx) => (
+                    <Card
+                      key={idx}
+                      className="shadow-subtle hover:shadow-elevation transition-all border-l-4 border-l-primary group"
+                    >
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base leading-tight group-hover:text-primary transition-colors">
+                          {copy.headline}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <p className="text-sm text-muted-foreground line-clamp-3">{copy.body}</p>
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-xs shadow-sm bg-background"
+                            onClick={() => {
+                              navigator.clipboard.writeText(`${copy.headline}\n\n${copy.body}`)
+                              toast.success('Texto copiado!', {
+                                description: 'Pronto para colar no Ad Manager.',
+                              })
+                            }}
+                          >
+                            Copiar p/ Ads
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="w-full text-xs shadow-sm"
+                            onClick={() => {
+                              setGeneratedAssets((prev) =>
+                                prev.map((a) =>
+                                  a.type === 'bundle' ? { ...a, cta: copy.headline } : a,
+                                ),
+                              )
+                              toast.success('Aplicado!', {
+                                description: 'O título foi aplicado como CTA no Bundle.',
+                              })
+                            }}
+                          >
+                            Aplicar no Design
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               )}
-              Gerar Asset{isABTesting ? 's' : ''}
-            </Button>
-          </div>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 

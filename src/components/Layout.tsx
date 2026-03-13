@@ -29,6 +29,7 @@ import {
   Activity,
   MonitorSmartphone,
   BarChart3,
+  BookOpen,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
@@ -66,6 +67,7 @@ const navItems = [
 const externalItems = [
   { title: 'Monitor de Deploys', icon: Activity, url: '/deploy-monitor' },
   { title: 'Portal do Cliente', icon: MonitorSmartphone, url: '/portal-cliente' },
+  { title: 'Relatório Ecossistema', icon: BookOpen, url: '/ecossistema' },
 ]
 
 export default function Layout() {

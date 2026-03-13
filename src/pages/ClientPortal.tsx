@@ -7,6 +7,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { useAppContext } from '@/components/AppContext'
 import {
   AlertCircle,
@@ -16,7 +24,6 @@ import {
   MousePointerClick,
   ShoppingCart,
   TrendingUp,
-  BarChart3,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -27,22 +34,48 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from '@/components/ui/chart'
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-} from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts'
 
 const analyticsData = [
   { month: 'Jul', cliques: 1540, conversoes: 120 },
   { month: 'Ago', cliques: 1850, conversoes: 145 },
   { month: 'Set', cliques: 2100, conversoes: 180 },
   { month: 'Out', cliques: 2800, conversoes: 240 },
+]
+
+const assetPerformanceData = [
+  {
+    asset: 'Banner Black Friday (A)',
+    platform: 'Meta Ads',
+    cpm: 'R$ 15,20',
+    cpc: 'R$ 0,45',
+    ctr: '3.2%',
+    conv: 120,
+  },
+  {
+    asset: 'Banner Black Friday (B)',
+    platform: 'Google Ads',
+    cpm: 'R$ 18,50',
+    cpc: 'R$ 0,60',
+    ctr: '2.8%',
+    conv: 85,
+  },
+  {
+    asset: 'Header Frete Grátis',
+    platform: 'Meta Ads',
+    cpm: 'R$ 12,00',
+    cpc: 'R$ 0,35',
+    ctr: '4.5%',
+    conv: 210,
+  },
+  {
+    asset: 'Modal de Urgência (Timer)',
+    platform: 'TikTok Ads',
+    cpm: 'R$ 9,80',
+    cpc: 'R$ 0,22',
+    ctr: '5.1%',
+    conv: 270,
+  },
 ]
 
 export default function ClientPortal() {
@@ -119,7 +152,7 @@ export default function ClientPortal() {
               Live Assets
             </TabsTrigger>
             <TabsTrigger value="analytics" className="text-sm">
-              Analytics
+              Performance
             </TabsTrigger>
             <TabsTrigger value="assets" className="text-sm">
               Brand Assets
@@ -209,44 +242,44 @@ export default function ClientPortal() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="shadow-subtle border-primary/20">
                 <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                  <CardTitle className="text-sm font-medium">Total de Cliques</CardTitle>
+                  <CardTitle className="text-sm font-medium">CPM Médio</CardTitle>
+                  <Activity className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">R$ 14,80</div>
+                  <p className="text-xs text-muted-foreground mt-1">-5% este mês</p>
+                </CardContent>
+              </Card>
+              <Card className="shadow-subtle border-primary/20">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                  <CardTitle className="text-sm font-medium">CPC Médio</CardTitle>
                   <MousePointerClick className="h-4 w-4 text-primary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">8.290</div>
-                  <p className="text-xs text-muted-foreground mt-1">+24% este mês</p>
+                  <div className="text-2xl font-bold">R$ 0,42</div>
+                  <p className="text-xs text-muted-foreground mt-1">-12% este mês</p>
+                </CardContent>
+              </Card>
+              <Card className="shadow-subtle">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                  <CardTitle className="text-sm font-medium">CTR Geral</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">3.8%</div>
+                  <p className="text-xs text-success mt-1">+0.5% este mês</p>
                 </CardContent>
               </Card>
               <Card className="shadow-subtle border-success/20 bg-success/5">
                 <CardHeader className="pb-2 flex flex-row items-center justify-between">
                   <CardTitle className="text-sm font-medium text-success">
-                    Conversões (Vendas)
+                    Conversões Geradas
                   </CardTitle>
                   <ShoppingCart className="h-4 w-4 text-success" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-success">685</div>
                   <p className="text-xs text-success/80 mt-1">+18% este mês</p>
-                </CardContent>
-              </Card>
-              <Card className="shadow-subtle">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                  <CardTitle className="text-sm font-medium">CTR Médio</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">4.2%</div>
-                  <p className="text-xs text-muted-foreground mt-1">Acima da média do setor</p>
-                </CardContent>
-              </Card>
-              <Card className="shadow-subtle">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                  <CardTitle className="text-sm font-medium">ROI Estimado</CardTitle>
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">3.8x</div>
-                  <p className="text-xs text-muted-foreground mt-1">Retorno sobre investimento</p>
                 </CardContent>
               </Card>
             </div>
@@ -318,6 +351,47 @@ export default function ClientPortal() {
                     </AreaChart>
                   </ResponsiveContainer>
                 </ChartContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-subtle">
+              <CardHeader>
+                <CardTitle>Asset Performance Comparison</CardTitle>
+                <CardDescription>
+                  Correlacione banners gerados no Studio com suas métricas de anúncio.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ativo (Criativo)</TableHead>
+                      <TableHead>Plataforma</TableHead>
+                      <TableHead>CPM</TableHead>
+                      <TableHead>CPC</TableHead>
+                      <TableHead>CTR</TableHead>
+                      <TableHead className="text-right">Conversões</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {assetPerformanceData.map((row, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="font-medium text-primary">{row.asset}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-[10px]">
+                            {row.platform}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{row.cpm}</TableCell>
+                        <TableCell>{row.cpc}</TableCell>
+                        <TableCell className="font-medium">{row.ctr}</TableCell>
+                        <TableCell className="text-right font-bold text-success">
+                          {row.conv}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>

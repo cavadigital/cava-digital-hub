@@ -21,6 +21,8 @@ import DeployMonitor from './pages/DeployMonitor'
 import ClientPortal from './pages/ClientPortal'
 import Analytics from './pages/Analytics'
 import NotificationSettings from './pages/NotificationSettings'
+import ClientApproval from './pages/ClientApproval'
+import Ecosystem from './pages/Ecosystem'
 
 const App = () => (
   <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
@@ -30,6 +32,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <Routes>
+            <Route path="/aprovacao-cliente" element={<ClientApproval />} />
             <Route element={<Layout />}>
               <Route path="/" element={<Index />} />
               <Route path="/projetos" element={<Projects />} />
@@ -43,6 +46,7 @@ const App = () => (
               <Route path="/deploy-monitor" element={<DeployMonitor />} />
               <Route path="/portal-cliente" element={<ClientPortal />} />
               <Route path="/analytics" element={<Analytics />} />
+              <Route path="/ecossistema" element={<Ecosystem />} />
               <Route path="/configuracoes/notificacoes" element={<NotificationSettings />} />
             </Route>
             <Route path="*" element={<NotFound />} />

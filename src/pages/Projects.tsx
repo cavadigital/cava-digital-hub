@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { MOCK_PROJECTS } from '@/lib/data'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,19 +10,37 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { useBranch } from '@/components/BranchContext'
-import { Plus, MessageSquare, Paperclip, MoreHorizontal, Clock } from 'lucide-react'
+import { useAppContext } from '@/components/AppContext'
+import { Plus, MessageSquare, Paperclip, MoreHorizontal, Clock, Share2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { toast } from 'sonner'
 
-const COLUMNS = ['Backlog', 'Em Design', 'Desenvolvimento', 'Aprovação Cliente', 'Finalizado']
+const COLUMNS = [
+  'Backlog',
+  'Em Design',
+  'Desenvolvimento',
+  'Aprovação Cliente',
+  'Aprovado',
+  'Finalizado',
+]
 
 export default function Projects() {
   const { currentBranch } = useBranch()
+  const { projects } = useAppContext()
   const [activeCard, setActiveCard] = useState<any>(null)
 
-  const projects = MOCK_PROJECTS.filter(
+  const filteredProjects = projects.filter(
     (p) => currentBranch === 'Consolidado' || p.branch === currentBranch,
   )
+
+  const handleShare = (id: string) => {
+    const url = `${window.location.origin}/aprovacao-cliente?id=${id}`
+    navigator.clipboard.writeText(url)
+    toast.success('Link de Aprovação Copiado', {
+      description: 'Link mobile-friendly copiado para a área de transferência.',
+    })
+  }
 
   return (
     <div className="h-full flex flex-col space-y-6 animate-fade-in">
@@ -50,12 +67,12 @@ export default function Projects() {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-semibold text-sm text-foreground/80">{col}</h3>
                 <Badge variant="secondary" className="bg-background">
-                  {projects.filter((p) => p.status === col).length}
+                  {filteredProjects.filter((p) => p.status === col).length}
                 </Badge>
               </div>
 
               <div className="flex flex-col gap-3 flex-1">
-                {projects
+                {filteredProjects
                   .filter((p) => p.status === col)
                   .map((project) => (
                     <Card
@@ -114,6 +131,14 @@ export default function Projects() {
                 <div className="flex items-center gap-2 mb-2">
                   <Badge>{activeCard.client}</Badge>
                   <Badge variant="outline">{activeCard.status}</Badge>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="ml-auto"
+                    onClick={() => handleShare(activeCard.id)}
+                  >
+                    <Share2 className="w-4 h-4 mr-2" /> Share for Approval
+                  </Button>
                 </div>
                 <SheetTitle className="text-2xl">{activeCard.title}</SheetTitle>
                 <SheetDescription>
