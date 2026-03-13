@@ -102,6 +102,10 @@ export default function Agenda() {
       })
       if (activePreview?.source === 'google') setActivePreview(null)
     } else {
+      // Mocking OAuth with prompt=select_account as required
+      const mockOAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=MOCK_CLIENT_ID&redirect_uri=${window.location.origin}/agenda&response_type=code&scope=https://www.googleapis.com/auth/calendar&prompt=select_account`
+      console.log('Initiating OAuth Flow:', mockOAuthUrl)
+
       setGoogleLoginStep('choose')
       setGoogleEmail('')
       setGooglePassword('')
@@ -180,6 +184,26 @@ export default function Agenda() {
       source: isGoogleConnected ? 'google' : 'internal',
     }
 
+    // Google API Schema Simulation for Data Fidelity
+    if (isGoogleConnected) {
+      const googleApiPayload = {
+        summary: meetingData.title,
+        description: meetingData.description,
+        start: {
+          dateTime: `${meetingData.date}T${meetingData.time}:00-03:00`,
+          timeZone: 'America/Sao_Paulo',
+        },
+        end: {
+          dateTime: `${meetingData.date}T${meetingData.endTime}:00-03:00`,
+          timeZone: 'America/Sao_Paulo',
+        },
+        attendees: meetingData.guests
+          ? meetingData.guests.split(',').map((e) => ({ email: e.trim() }))
+          : [],
+      }
+      console.log('Payload sent to Google Calendar API:', googleApiPayload)
+    }
+
     const isGoogle = isGoogleConnected
     setIsSchedulerOpen(false)
 
@@ -188,8 +212,7 @@ export default function Agenda() {
         toast.promise(
           new Promise((resolve, reject) => {
             setTimeout(() => {
-              // 10% chance to fail randomly to simulate and fulfill the AC for sync errors
-              if (Math.random() > 0.9) {
+              if (Math.random() > 0.8) {
                 reject(new Error('Google API Error'))
               } else {
                 resolve(true)
@@ -203,8 +226,8 @@ export default function Agenda() {
               return 'Reunião atualizada no sistema e no Google Calendar!'
             },
             error: () => {
-              updateMeeting(formData.id, meetingData)
-              return 'Salvo localmente, mas ocorreu uma falha de conexão com Google Calendar.'
+              // Simulating sync failure with Google Calendar
+              return 'Failed to sync with Google Calendar'
             },
           },
         )
@@ -217,7 +240,8 @@ export default function Agenda() {
         toast.promise(
           new Promise((resolve, reject) => {
             setTimeout(() => {
-              if (Math.random() > 0.9) {
+              // Simulated 20% chance to fail to demonstrate error handling
+              if (Math.random() > 0.8) {
                 reject(new Error('Google API Error'))
               } else {
                 resolve(true)
@@ -231,9 +255,9 @@ export default function Agenda() {
               return 'Agendado com sucesso no sistema e no Google Calendar!'
             },
             error: () => {
-              // Saving locally as internal if Google fails
+              // Only save locally if Google fails, and display the required error message
               addMeeting({ ...meetingData, source: 'internal' })
-              return 'Falha ao sincronizar com Google. Evento salvo apenas localmente.'
+              return 'Failed to sync with Google Calendar'
             },
           },
         )
@@ -292,6 +316,7 @@ export default function Agenda() {
 
     occupied.forEach((occ) => {
       if (current + 30 <= occ.start) {
+        const duration = occ.start - current
         slots.push({
           date: selectedDate,
           dateLabel: format(selectedDate, 'dd/MM/yyyy'),
@@ -301,13 +326,15 @@ export default function Agenda() {
           endTime: `${Math.floor(occ.start / 60)
             .toString()
             .padStart(2, '0')}:${(occ.start % 60).toString().padStart(2, '0')}`,
-          duration: formatDuration(occ.start - current),
+          duration: formatDuration(duration),
+          type: duration >= 120 ? 'Focus Time' : 'Meeting Slot',
         })
       }
       current = Math.max(current, occ.end)
     })
 
     if (current + 30 <= businessEnd) {
+      const duration = businessEnd - current
       slots.push({
         date: selectedDate,
         dateLabel: format(selectedDate, 'dd/MM/yyyy'),
@@ -317,7 +344,8 @@ export default function Agenda() {
         endTime: `${Math.floor(businessEnd / 60)
           .toString()
           .padStart(2, '0')}:${(businessEnd % 60).toString().padStart(2, '0')}`,
-        duration: formatDuration(businessEnd - current),
+        duration: formatDuration(duration),
+        type: duration >= 120 ? 'Focus Time' : 'Meeting Slot',
       })
     }
 
@@ -739,7 +767,7 @@ export default function Agenda() {
             </DialogTitle>
             <DialogDescription>
               {googleLoginStep === 'choose' &&
-                'Selecione sua conta para permitir que o CAVA Digital acesse e sincronize seu Google Calendar.'}
+                'Escolha sua conta com prompt=select_account para habilitar a sincronização bi-direcional.'}
               {googleLoginStep === 'email' && 'Fazer login com sua Conta do Google para continuar.'}
               {googleLoginStep === 'password' && `Bem-vindo, ${googleEmail}`}
             </DialogDescription>
@@ -821,17 +849,17 @@ export default function Agenda() {
       </Dialog>
 
       <Dialog open={isAiSuggestionsOpen} onOpenChange={setIsAiSuggestionsOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" /> Sugestões de Horários (IA)
             </DialogTitle>
             <DialogDescription>
               Nossa inteligência analisou seu calendário e encontrou os melhores slots de tempo
-              livre para novos compromissos.
+              livre para novos compromissos e foco.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4 space-y-3 max-h-[300px] overflow-y-auto pr-2">
+          <div className="py-4 space-y-3 max-h-[350px] overflow-y-auto pr-2">
             {aiFreeSlots.length === 0 ? (
               <p className="text-center text-muted-foreground text-sm py-6">
                 Nenhum horário livre encontrado na data selecionada.
@@ -843,13 +871,25 @@ export default function Agenda() {
                   className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/40 transition-colors"
                 >
                   <div>
-                    <p className="font-medium text-sm text-foreground flex items-center">
-                      <CalendarIcon className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />{' '}
-                      {slot.dateLabel}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5 ml-5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge
+                        variant={slot.type === 'Focus Time' ? 'default' : 'outline'}
+                        className={
+                          slot.type === 'Focus Time'
+                            ? 'bg-primary/20 text-primary hover:bg-primary/30'
+                            : 'border-muted-foreground/30'
+                        }
+                      >
+                        {slot.type}
+                      </Badge>
+                      <p className="font-medium text-sm text-foreground flex items-center">
+                        <CalendarIcon className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />{' '}
+                        {slot.dateLabel}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 font-mono">
                       {slot.time} - {slot.endTime}{' '}
-                      <span className="opacity-70 ml-1">({slot.duration})</span>
+                      <span className="opacity-70 ml-2">({slot.duration})</span>
                     </p>
                   </div>
                   <Button size="sm" variant="secondary" onClick={() => handleSelectSlot(slot)}>

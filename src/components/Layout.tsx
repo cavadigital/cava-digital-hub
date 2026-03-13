@@ -105,7 +105,7 @@ export default function Layout() {
       if (diff <= 0) diff = 60
       const h = Math.floor(diff / 60)
       const m = diff % 60
-      setLogDuration(`${h}h ${m.toString().padStart(2, '0')}m`)
+      setLogDuration(`${h > 0 ? h + 'h ' : ''}${m > 0 ? m + 'm' : ''}`.trim())
       setLogProject('')
     }
   }, [meetingToConvert])
@@ -263,8 +263,8 @@ export default function Layout() {
               <Clock className="w-5 h-5 text-primary" /> Converter em Registro de Horas
             </DialogTitle>
             <DialogDescription>
-              Deseja converter o tempo gasto nesta reunião em um registro de horas faturáveis para
-              um projeto?
+              Would you like to register these {logDuration} to a project? (Deseja registrar essas{' '}
+              {logDuration} em um projeto faturável?)
             </DialogDescription>
           </DialogHeader>
           {meetingToConvert && (

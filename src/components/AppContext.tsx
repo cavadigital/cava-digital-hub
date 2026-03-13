@@ -372,19 +372,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const endMs = new Date(now.getFullYear(), now.getMonth(), now.getDate(), eh, em).getTime()
 
           const timeToStart = startMs - currentMs
-          // Exatamente 15 minutos antes
-          if (timeToStart > 14 * 60000 && timeToStart <= 16 * 60000 && !notifiedWa.has(m.id)) {
+          // Between 14 and 15 minutes before the meeting
+          if (timeToStart > 14 * 60000 && timeToStart <= 15 * 60000 && !notifiedWa.has(m.id)) {
             toast.success('Lembrete Automático Enviado 🟢', {
-              description: `Mensagem WhatsApp enviada: "Olá! Sua reunião '${m.title}' começará em breve às ${m.time}."`,
+              description: `Aviso via WhatsApp enviado: "Olá! Sua reunião '${m.title}' começará em breve às ${m.time}."`,
             })
             setNotifiedWa((prev) => new Set(prev).add(m.id))
           }
 
           const timeSinceEnd = currentMs - endMs
-          // Logo após o término agendado
+          // Up to 5 mins after the meeting scheduled end time
           if (timeSinceEnd >= 0 && timeSinceEnd <= 5 * 60000 && !promptedConv.has(m.id)) {
+            const diffMinutes = Math.round((endMs - startMs) / 60000)
+            const hours = Math.floor(diffMinutes / 60)
+            const mins = diffMinutes % 60
+            const formattedTime =
+              `${hours > 0 ? hours + 'h' : ''}${mins > 0 ? ' ' + mins + 'm' : ''}`.trim()
+
             toast('Reunião Encerrada', {
-              description: `Deseja converter o tempo da reunião "${m.title}" em um registro de horas para o projeto?`,
+              description: `Would you like to register these ${formattedTime} to a project?`,
               action: {
                 label: 'Converter Tempo',
                 onClick: () => setMeetingToConvert(m),
