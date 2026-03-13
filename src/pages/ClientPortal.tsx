@@ -8,16 +8,48 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useAppContext } from '@/components/AppContext'
-import { AlertCircle, Target, Activity, CheckCircle2 } from 'lucide-react'
+import {
+  AlertCircle,
+  Target,
+  Activity,
+  CheckCircle2,
+  MousePointerClick,
+  ShoppingCart,
+  TrendingUp,
+  BarChart3,
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from '@/components/ui/chart'
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+} from 'recharts'
+
+const analyticsData = [
+  { month: 'Jul', cliques: 1540, conversoes: 120 },
+  { month: 'Ago', cliques: 1850, conversoes: 145 },
+  { month: 'Set', cliques: 2100, conversoes: 180 },
+  { month: 'Out', cliques: 2800, conversoes: 240 },
+]
 
 export default function ClientPortal() {
   const { clients } = useAppContext()
   const [selectedClientId, setSelectedClientId] = useState<string>('')
   const client = clients.find((c) => c.id === selectedClientId)
 
-  // Mocks for live implementations showing perceived value
   const liveAssets = [
     {
       id: 1,
@@ -82,12 +114,15 @@ export default function ClientPortal() {
 
       {client && (
         <Tabs defaultValue="live" className="w-full">
-          <TabsList className="mb-6 grid w-full grid-cols-2 max-w-md mx-auto h-12">
+          <TabsList className="mb-6 grid w-full grid-cols-3 max-w-2xl mx-auto h-12">
             <TabsTrigger value="live" className="text-sm">
-              Performance & Live Assets
+              Live Assets
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="text-sm">
+              Analytics
             </TabsTrigger>
             <TabsTrigger value="assets" className="text-sm">
-              Aprovação de Marca
+              Brand Assets
             </TabsTrigger>
           </TabsList>
 
@@ -166,6 +201,123 @@ export default function ClientPortal() {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6 animate-fade-in">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="shadow-subtle border-primary/20">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                  <CardTitle className="text-sm font-medium">Total de Cliques</CardTitle>
+                  <MousePointerClick className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">8.290</div>
+                  <p className="text-xs text-muted-foreground mt-1">+24% este mês</p>
+                </CardContent>
+              </Card>
+              <Card className="shadow-subtle border-success/20 bg-success/5">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-success">
+                    Conversões (Vendas)
+                  </CardTitle>
+                  <ShoppingCart className="h-4 w-4 text-success" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-success">685</div>
+                  <p className="text-xs text-success/80 mt-1">+18% este mês</p>
+                </CardContent>
+              </Card>
+              <Card className="shadow-subtle">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                  <CardTitle className="text-sm font-medium">CTR Médio</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">4.2%</div>
+                  <p className="text-xs text-muted-foreground mt-1">Acima da média do setor</p>
+                </CardContent>
+              </Card>
+              <Card className="shadow-subtle">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                  <CardTitle className="text-sm font-medium">ROI Estimado</CardTitle>
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">3.8x</div>
+                  <p className="text-xs text-muted-foreground mt-1">Retorno sobre investimento</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="shadow-subtle">
+              <CardHeader>
+                <CardTitle>Engajamento vs Conversões (Evolução)</CardTitle>
+                <CardDescription>
+                  Impacto direto das implementações da CAVA na sua loja virtual.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    cliques: { label: 'Cliques nos Assets', color: 'hsl(var(--primary))' },
+                    conversoes: { label: 'Conversões Geradas', color: 'hsl(var(--success))' },
+                  }}
+                  className="h-[350px]"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={analyticsData}
+                      margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                    >
+                      <defs>
+                        <linearGradient id="colorCliques" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="colorConversoes" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="hsl(var(--border))"
+                      />
+                      <XAxis dataKey="month" axisLine={false} tickLine={false} tickMargin={10} />
+                      <YAxis yAxisId="left" axisLine={false} tickLine={false} tickMargin={10} />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        axisLine={false}
+                        tickLine={false}
+                        tickMargin={10}
+                      />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartLegend content={<ChartLegendContent />} />
+                      <Area
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="cliques"
+                        stroke="hsl(var(--primary))"
+                        fillOpacity={1}
+                        fill="url(#colorCliques)"
+                        strokeWidth={2}
+                      />
+                      <Area
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="conversoes"
+                        stroke="hsl(var(--success))"
+                        fillOpacity={1}
+                        fill="url(#colorConversoes)"
+                        strokeWidth={2}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
               </CardContent>
             </Card>
           </TabsContent>

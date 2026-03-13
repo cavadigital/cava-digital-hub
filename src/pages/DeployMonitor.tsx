@@ -23,8 +23,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog'
-import { Activity, CheckCircle2, XCircle, AlertTriangle, TerminalSquare } from 'lucide-react'
+import {
+  Activity,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  TerminalSquare,
+  RotateCcw,
+} from 'lucide-react'
 import { useAppContext } from '@/components/AppContext'
 import { toast } from 'sonner'
 
@@ -93,6 +101,12 @@ export default function DeployMonitor() {
     }
   }
 
+  const handleRollback = (id: string, platform: string) => {
+    toast.success('Rollback Iniciado', {
+      description: `Restaurando a plataforma ${platform} para a versão estável #${id}.`,
+    })
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -151,7 +165,7 @@ export default function DeployMonitor() {
                 <TableHead>Plataforma</TableHead>
                 <TableHead>Desenvolvedor</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Detalhes</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -165,7 +179,7 @@ export default function DeployMonitor() {
                   <TableCell>
                     {deploy.status === 'Success' && (
                       <Badge className="bg-success/10 text-success border-success/20 hover:bg-success/20">
-                        <CheckCircle2 className="w-3 h-3 mr-1" /> Sucesso
+                        <CheckCircle2 className="w-3 h-3 mr-1" /> Sucesso (Estável)
                       </Badge>
                     )}
                     {deploy.status === 'Error' && (
@@ -179,12 +193,23 @@ export default function DeployMonitor() {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right flex items-center justify-end gap-2">
+                    {deploy.status === 'Success' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRollback(deploy.id, deploy.platform)}
+                        className="text-xs h-8"
+                        title="Restaurar loja para esta versão estável"
+                      >
+                        <RotateCcw className="h-3 w-3 mr-1.5" /> Reverter
+                      </Button>
+                    )}
                     {deploy.log ? (
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <TerminalSquare className="h-4 w-4 mr-2" /> Log
+                          <Button variant="ghost" size="sm" className="h-8">
+                            <TerminalSquare className="h-4 w-4" />
                           </Button>
                         </DialogTrigger>
                         <DialogContent>
@@ -198,7 +223,7 @@ export default function DeployMonitor() {
                         </DialogContent>
                       </Dialog>
                     ) : (
-                      <span className="text-xs text-muted-foreground">-</span>
+                      <span className="w-9 inline-block"></span>
                     )}
                   </TableCell>
                 </TableRow>
