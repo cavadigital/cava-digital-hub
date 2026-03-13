@@ -12,7 +12,31 @@ export function useGoogleAuth() {
   const { isGoogleConnected, connectGoogle, disconnectGoogle } = useAppContext()
   const [isAuthLoading, setIsAuthLoading] = useState(false)
 
-  const handleConnect = (onSuccess?: (token: string) => void) => {
+  const loadGoogleScript = (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (window.google?.accounts?.oauth2) {
+        resolve()
+        return
+      }
+      const existingScript = document.querySelector(
+        'script[src="https://accounts.google.com/gsi/client"]',
+      )
+      if (existingScript) {
+        existingScript.addEventListener('load', () => resolve())
+        existingScript.addEventListener('error', (e) => reject(e))
+        return
+      }
+      const script = document.createElement('script')
+      script.src = 'https://accounts.google.com/gsi/client'
+      script.async = true
+      script.defer = true
+      script.onload = () => resolve()
+      script.onerror = (e) => reject(e)
+      document.head.appendChild(script)
+    })
+  }
+
+  const handleConnect = async (onSuccess?: (token: string) => void) => {
     if (isGoogleConnected) {
       disconnectGoogle()
       toast.info('Google Workspace desconectado.', {
@@ -21,10 +45,15 @@ export function useGoogleAuth() {
       return
     }
 
-    if (!window.google) {
-      toast.error('SDK do Google não carregado ainda.', {
-        description: 'Verifique sua conexão ou desative bloqueadores de script.',
+    setIsAuthLoading(true)
+
+    try {
+      await loadGoogleScript()
+    } catch (e) {
+      toast.error('Erro ao carregar script do Google', {
+        description: 'Verifique sua conexão ou desative bloqueadores de anúncios.',
       })
+      setIsAuthLoading(false)
       return
     }
 
@@ -39,16 +68,17 @@ export function useGoogleAuth() {
       toast.error('Erro de Configuração', {
         description: 'VITE_GOOGLE_CLIENT_ID não está definido nas variáveis de ambiente.',
       })
+      setIsAuthLoading(false)
       return
     }
-
-    setIsAuthLoading(true)
 
     try {
       const client = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope:
           'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+        hint: 'contato@cavadigital.com.br',
+        prompt: 'consent',
         callback: async (response: any) => {
           if (response.error) {
             let errorDesc = 'O acesso foi negado ou ocorreu um problema de configuração.'

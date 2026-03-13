@@ -40,7 +40,7 @@ import {
 import { toast } from 'sonner'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale/pt-BR'
+import { ptBR } from 'date-fns/locale'
 
 const formatDuration = (mins: number) => {
   const h = Math.floor(mins / 60)
