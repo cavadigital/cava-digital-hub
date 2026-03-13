@@ -103,7 +103,6 @@ export default function Agenda() {
       })
       if (activePreview?.source === 'google') setActivePreview(null)
     } else {
-      // Adjusted OAuth URL to correctly request the required scopes for editing and formatting
       const mockOAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=MOCK_CLIENT_ID&redirect_uri=${window.location.origin}/agenda&response_type=code&scope=https://www.googleapis.com/auth/calendar.events&prompt=select_account`
       console.log('Initiating OAuth Flow with fixed scopes:', mockOAuthUrl)
 
@@ -121,7 +120,7 @@ export default function Agenda() {
       toggleGoogleConnection()
       setIsSyncing(false)
       toast.success('Google Workspace conectado!', {
-        description: 'Sincronização bidirecional ativada com sucesso.',
+        description: 'Sincronização bidirecional ativada com sucesso (Escopo: calendar.events).',
       })
     }, 1200)
   }
@@ -185,7 +184,6 @@ export default function Agenda() {
       source: isGoogleConnected ? 'google' : 'internal',
     }
 
-    // Fixed Google API Schema Simulation with ISO 8601 formatting and proper timezones
     if (isGoogleConnected) {
       const dateParts = meetingData.date.split('-')
       const timeParts = meetingData.time.split(':')
@@ -210,6 +208,7 @@ export default function Agenda() {
       const googleApiPayload = {
         summary: meetingData.title,
         description: meetingData.description,
+        location: meetingData.type === 'Interna' ? 'CAVA Hub (Virtual)' : 'Google Meet',
         start: {
           dateTime: startDateTime.toISOString(),
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -225,55 +224,48 @@ export default function Agenda() {
       console.log('Payload sent to Google Calendar API (ISO 8601):', googleApiPayload)
     }
 
-    const isGoogle = isGoogleConnected
     setIsSchedulerOpen(false)
 
-    if (isEditing && formData.id) {
-      if (isGoogle) {
-        toast.promise(
-          new Promise((resolve, reject) => {
-            setTimeout(() => {
-              // Successfully resolve the sync issue
+    if (isGoogleConnected) {
+      toast.promise(
+        new Promise((resolve, reject) => {
+          setTimeout(() => {
+            // Enhanced API Error Handling simulation
+            if (meetingData.title.toLowerCase().includes('erro permissao')) {
+              reject(
+                new Error(
+                  'Permission denied: Insufficient scope for calendar events. Ensure you granted write access.',
+                ),
+              )
+            } else if (meetingData.title.toLowerCase().includes('erro data')) {
+              reject(
+                new Error('Invalid date format: ISO 8601 string expected for start/end times.'),
+              )
+            } else {
               resolve(true)
-            }, 800)
-          }),
-          {
-            loading: 'Sincronizando alterações com Google Calendar...',
-            success: () => {
-              updateMeeting(formData.id, meetingData)
-              return 'Reunião atualizada no sistema e no Google Calendar!'
-            },
-            error: (err: any) => {
-              // This acts as actionable feedback if an error were to happen
-              return `Falha na sincronização: ${err.message || 'Verifique as permissões de escopo'}. Tente reconectar sua conta.`
-            },
+            }
+          }, 800)
+        }),
+        {
+          loading: isEditing
+            ? 'Sincronizando com Google Calendar...'
+            : 'Criando no Google Calendar...',
+          success: () => {
+            if (isEditing && formData.id) updateMeeting(formData.id, meetingData)
+            else addMeeting(meetingData)
+            return 'Sincronizado com sucesso com o Google Calendar!'
           },
-        )
-      } else {
+          error: (err: any) => {
+            // Fallback to internal if creation fails
+            if (!isEditing) addMeeting({ ...meetingData, source: 'internal' })
+            return `Falha na Sincronização Google: ${err.message}`
+          },
+        },
+      )
+    } else {
+      if (isEditing && formData.id) {
         updateMeeting(formData.id, meetingData)
         toast.success('Reunião atualizada com sucesso!')
-      }
-    } else {
-      if (isGoogle) {
-        toast.promise(
-          new Promise((resolve, reject) => {
-            setTimeout(() => {
-              // Successfully resolve the sync issue
-              resolve(true)
-            }, 800)
-          }),
-          {
-            loading: 'Criando evento no Google Calendar...',
-            success: () => {
-              addMeeting(meetingData)
-              return 'Agendado com sucesso no sistema e no Google Calendar!'
-            },
-            error: (err: any) => {
-              addMeeting({ ...meetingData, source: 'internal' })
-              return `Erro na sincronização: ${err.message || 'Verifique sua conexão'}. Salvo apenas localmente.`
-            },
-          },
-        )
       } else {
         addMeeting(meetingData)
         toast.success('Reunião agendada com sucesso!')
@@ -666,7 +658,7 @@ export default function Agenda() {
                 id="title"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="Ex: Sync de Alinhamento"
+                placeholder="Ex: Sync de Alinhamento (use 'erro permissao' para testar API)"
               />
             </div>
 
@@ -780,7 +772,7 @@ export default function Agenda() {
             </DialogTitle>
             <DialogDescription>
               {googleLoginStep === 'choose' &&
-                'Escolha sua conta com prompt=select_account para habilitar a sincronização bi-direcional.'}
+                'Escolha sua conta para habilitar a sincronização bi-direcional.'}
               {googleLoginStep === 'email' && 'Fazer login com sua Conta do Google para continuar.'}
               {googleLoginStep === 'password' && `Bem-vindo, ${googleEmail}`}
             </DialogDescription>
@@ -809,6 +801,14 @@ export default function Agenda() {
                 variant="outline"
                 className="h-16 justify-start px-4 hover:bg-muted/50"
                 onClick={() => {
+                  const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=CAVA_CLIENT_ID&redirect_uri=${window.location.origin}/agenda&response_type=code&scope=https://www.googleapis.com/auth/calendar.events&prompt=select_account`
+                  console.log('Initiating OAuth Flow with prompt=select_account:', oauthUrl)
+
+                  toast.info('Redirecionando Auth...', {
+                    description:
+                      'Forçando seleção de conta com prompt=select_account para garantir a sincronização correta.',
+                  })
+
                   setGoogleEmail('')
                   setGooglePassword('')
                   setGoogleLoginStep('email')

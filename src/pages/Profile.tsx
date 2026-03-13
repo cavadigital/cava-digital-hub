@@ -59,13 +59,28 @@ export default function Profile() {
 
   const filteredLogs = myTimeLogs.filter((log) => {
     if (!startDate && !endDate) return true
+
+    // Parse DD/MM/YYYY for filtering
+    const [day, month, year] = log.date.split('/')
+    const logDate = new Date(`${year}-${month}-${day}T12:00:00`)
+
+    if (startDate) {
+      const start = new Date(`${startDate}T00:00:00`)
+      if (logDate < start) return false
+    }
+    if (endDate) {
+      const end = new Date(`${endDate}T23:59:59`)
+      if (logDate > end) return false
+    }
     return true
   })
 
   const handleSaveProfile = () => {
     updateCurrentUser(formData)
     setIsEditing(false)
-    toast.success('Perfil atualizado com sucesso!')
+    toast.success('Perfil atualizado com sucesso!', {
+      description: 'As alterações foram salvas e refletidas no sistema.',
+    })
   }
 
   const handleCancelProfile = () => {
@@ -120,7 +135,7 @@ export default function Profile() {
                   variant="outline"
                   size="sm"
                   onClick={() => setIsEditing(true)}
-                  className="h-8"
+                  className="h-8 shadow-sm"
                 >
                   <Edit className="w-4 h-4 mr-2" /> Editar
                 </Button>
@@ -135,6 +150,7 @@ export default function Profile() {
                       <Input
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Nome Completo"
                       />
                     </div>
                     <div className="space-y-2">
@@ -143,6 +159,7 @@ export default function Profile() {
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="email@empresa.com"
                       />
                     </div>
                     <div className="space-y-2">
@@ -150,6 +167,7 @@ export default function Profile() {
                       <Input
                         value={formData.role}
                         onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                        placeholder="Ex: Desenvolvedor Front-end"
                       />
                     </div>
                     <div className="space-y-2">
@@ -157,6 +175,7 @@ export default function Profile() {
                       <Input
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        placeholder="+55 11 99999-9999"
                       />
                     </div>
                     <div className="space-y-2">
@@ -165,8 +184,8 @@ export default function Profile() {
                         value={formData.contract}
                         onValueChange={(val) => setFormData({ ...formData, contract: val })}
                       >
-                        <SelectTrigger>
-                          <SelectValue />
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Selecione o tipo" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="CLT">CLT</SelectItem>
@@ -181,7 +200,9 @@ export default function Profile() {
                     <Button variant="outline" onClick={handleCancelProfile}>
                       Cancelar
                     </Button>
-                    <Button onClick={handleSaveProfile}>Salvar</Button>
+                    <Button onClick={handleSaveProfile} className="shadow-md">
+                      Salvar Alterações
+                    </Button>
                   </div>
                 </div>
               ) : (
