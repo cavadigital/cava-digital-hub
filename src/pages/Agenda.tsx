@@ -17,7 +17,8 @@ import {
   RefreshCw,
   MessageCircle,
 } from 'lucide-react'
-import { useAppContext, Meeting, CurrentUser } from '@/components/AppContext'
+import { useAppContext, Meeting } from '@/components/AppContext'
+import { useGoogleAuth } from '@/hooks/use-google-auth'
 import {
   Dialog,
   DialogContent,
@@ -40,12 +41,6 @@ import { toast } from 'sonner'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { format } from 'date-fns'
 
-declare global {
-  interface Window {
-    google?: any
-  }
-}
-
 const formatDuration = (mins: number) => {
   const h = Math.floor(mins / 60)
   const m = mins % 60
@@ -57,15 +52,15 @@ export default function Agenda() {
     meetings,
     isGoogleConnected,
     googleToken,
-    connectGoogle,
     disconnectGoogle,
     updateGoogleMeetings,
     addMeeting,
     updateMeeting,
     deleteMeeting,
     setMeetingToConvert,
-    updateCurrentUser,
   } = useAppContext()
+
+  const { handleConnect, isAuthLoading } = useGoogleAuth()
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
   const selectedDateStr = selectedDate ? selectedDate.toISOString().split('T')[0] : ''
@@ -98,6 +93,7 @@ export default function Agenda() {
 
   const [isSyncing, setIsSyncing] = useState(false)
   const [isAiSuggestionsOpen, setIsAiSuggestionsOpen] = useState(false)
+  const [hasFetched, setHasFetched] = useState(false)
 
   const fetchGoogleEvents = async (token: string) => {
     try {
@@ -117,9 +113,11 @@ export default function Agenda() {
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) {
           disconnectGoogle()
-          throw new Error('Sessão expirada. Por favor, reconecte sua conta do Google.')
+          throw new Error(
+            'Sessão expirada ou permissões insuficientes (Erro 401/403). Por favor, reconecte sua conta.',
+          )
         }
-        throw new Error('Falha ao obter eventos do Google Calendar.')
+        throw new Error(`Erro ${res.status}: Falha ao obter eventos do Google Calendar.`)
       }
 
       const data = await res.json()
@@ -160,75 +158,24 @@ export default function Agenda() {
         .filter(Boolean)
 
       updateGoogleMeetings(mapped)
-      setIsSyncing(false)
     } catch (err: any) {
       console.error(err)
-      toast.error(err.message || 'Erro ao sincronizar eventos do Google Calendar.')
+      toast.error('Erro de Sincronização Google', {
+        description: err.message || 'Falha ao sincronizar eventos.',
+      })
+    } finally {
       setIsSyncing(false)
     }
   }
 
-  const handleConnectGoogle = () => {
-    if (isGoogleConnected) {
-      disconnectGoogle()
-      toast.info('Google Workspace desconectado.', {
-        description: 'Reuniões sincronizadas foram removidas da visualização.',
-      })
-      if (activePreview?.source === 'google') setActivePreview(null)
-      return
+  useEffect(() => {
+    if (isGoogleConnected && googleToken && !hasFetched) {
+      fetchGoogleEvents(googleToken)
+      setHasFetched(true)
+    } else if (!isGoogleConnected && hasFetched) {
+      setHasFetched(false)
     }
-
-    if (!window.google) {
-      toast.error('SDK do Google não carregado ainda. Verifique sua conexão.')
-      return
-    }
-
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
-    if (!clientId) {
-      toast.error('Erro de Configuração', {
-        description: 'VITE_GOOGLE_CLIENT_ID não está definido nas variáveis de ambiente.',
-      })
-      return
-    }
-
-    const client = window.google.accounts.oauth2.initTokenClient({
-      client_id: clientId,
-      scope:
-        'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
-      prompt: 'select_account',
-      callback: (response: any) => {
-        if (response.error !== undefined) {
-          toast.error(`Auth Error: ${response.error}`)
-          return
-        }
-        connectGoogle(response.access_token)
-        toast.success('Google Workspace conectado!', {
-          description: 'Sincronizando eventos e perfil...',
-        })
-
-        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${response.access_token}` },
-        })
-          .then((res) => {
-            if (res.ok) return res.json()
-            throw new Error('Falha ao obter perfil do Google')
-          })
-          .then((data) => {
-            const updates: Partial<CurrentUser> = {}
-            if (data.name) updates.name = data.name
-            if (data.email) updates.email = data.email
-            if (data.picture) updates.avatarUrl = data.picture
-            if (Object.keys(updates).length > 0) {
-              updateCurrentUser(updates)
-            }
-          })
-          .catch((err) => console.error('Erro ao sincronizar perfil:', err))
-
-        fetchGoogleEvents(response.access_token)
-      },
-    })
-    client.requestAccessToken()
-  }
+  }, [isGoogleConnected, googleToken, hasFetched])
 
   const handleOpenCreate = () => {
     setFormData({
@@ -327,7 +274,9 @@ export default function Agenda() {
           if (!res.ok) {
             if (res.status === 401 || res.status === 403) {
               disconnectGoogle()
-              throw new Error('Sessão expirada ou limite de API excedido. Por favor, reconecte.')
+              throw new Error(
+                'Sessão expirada. O acesso foi revogado ou o token é inválido (Erro 401/403). Reconecte sua conta.',
+              )
             }
             throw new Error(await res.text())
           }
@@ -335,7 +284,7 @@ export default function Agenda() {
           if (isUpdate) {
             updateMeeting(formData.id, meetingData)
           } else {
-            addMeeting({ ...meetingData, id: data.id }) // Temporary ID, fetch will replace
+            addMeeting({ ...meetingData, id: data.id })
           }
           fetchGoogleEvents(googleToken)
         }),
@@ -371,7 +320,9 @@ export default function Agenda() {
           if (!res.ok) {
             if (res.status === 401 || res.status === 403) {
               disconnectGoogle()
-              throw new Error('Sessão expirada. Por favor, reconecte sua conta.')
+              throw new Error(
+                'Sessão expirada. O acesso foi revogado ou o token é inválido (Erro 401/403). Reconecte sua conta.',
+              )
             }
             throw new Error(await res.text())
           }
@@ -497,13 +448,13 @@ export default function Agenda() {
         <div className="flex flex-wrap gap-2">
           <Button
             variant={isGoogleConnected ? 'outline' : 'secondary'}
-            onClick={handleConnectGoogle}
-            disabled={isSyncing}
+            onClick={() => handleConnect()}
+            disabled={isSyncing || isAuthLoading}
             className={
               isGoogleConnected ? 'border-primary/20 hover:bg-primary/5' : 'bg-background shadow-sm'
             }
           >
-            {isSyncing ? (
+            {isSyncing || isAuthLoading ? (
               <RefreshCw className="mr-2 h-4 w-4 animate-spin text-muted-foreground" />
             ) : isGoogleConnected ? (
               <CheckCircle2 className="mr-2 h-4 w-4 text-success" />

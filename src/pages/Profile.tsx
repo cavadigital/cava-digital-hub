@@ -13,7 +13,16 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useAppContext } from '@/components/AppContext'
-import { BarChart3, List, Calendar as CalendarIcon, Clock, Edit } from 'lucide-react'
+import { useGoogleAuth } from '@/hooks/use-google-auth'
+import {
+  BarChart3,
+  List,
+  Calendar as CalendarIcon,
+  Clock,
+  Edit,
+  CheckCircle2,
+  Loader2,
+} from 'lucide-react'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts'
 import {
@@ -36,7 +45,12 @@ export default function Profile() {
     getEffectiveGoal,
     currentUser,
     updateCurrentUser,
+    isGoogleConnected,
+    googleEmail,
   } = useAppContext()
+
+  const { handleConnect, isAuthLoading } = useGoogleAuth()
+
   const [timeView, setTimeView] = useState<'week' | 'month'>('week')
 
   const [startDate, setStartDate] = useState('')
@@ -234,6 +248,71 @@ export default function Profile() {
               )}
             </CardContent>
           </Card>
+
+          <div className="mt-6 border-t pt-6">
+            <h3 className="text-lg font-bold mb-4">Integrações de Conta</h3>
+            <Card className="shadow-subtle">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <img
+                    src="https://img.usecurling.com/i?q=google&color=multicolor&shape=fill"
+                    className="w-4 h-4"
+                    alt="Google"
+                  />
+                  Google Workspace
+                </CardTitle>
+                <CardDescription>
+                  Conecte sua conta Google para sincronização bidirecional de reuniões e eventos.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isGoogleConnected ? (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-success/5 border border-success/20 p-4 rounded-lg">
+                    <div>
+                      <p className="font-semibold text-success flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4" /> Conectado com Sucesso
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Conta vinculada: <strong>{googleEmail}</strong>
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleConnect()}
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 w-full sm:w-auto"
+                    >
+                      Desconectar
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/30 border p-4 rounded-lg">
+                    <div>
+                      <p className="font-semibold">Nenhuma conta conectada</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Habilite o sync de calendário conectando sua conta oficial.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => handleConnect()}
+                      disabled={isAuthLoading}
+                      className="w-full sm:w-auto"
+                    >
+                      {isAuthLoading ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <img
+                          src="https://img.usecurling.com/i?q=google&color=multicolor&shape=fill"
+                          className="w-4 h-4 mr-2"
+                          alt="Google"
+                        />
+                      )}
+                      Conectar Conta Google
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="productivity" className="space-y-6">

@@ -160,7 +160,8 @@ interface AppContextType {
   deleteMeeting: (id: string) => void
   isGoogleConnected: boolean
   googleToken: string | null
-  connectGoogle: (token: string) => void
+  googleEmail: string | null
+  connectGoogle: (token: string, email: string) => void
   disconnectGoogle: () => void
   updateGoogleMeetings: (meetings: Meeting[]) => void
   meetingToConvert: Meeting | null
@@ -313,6 +314,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const [isGoogleConnected, setIsGoogleConnected] = useState(false)
   const [googleToken, setGoogleToken] = useState<string | null>(null)
+  const [googleEmail, setGoogleEmail] = useState<string | null>(null)
   const [meetingToConvert, setMeetingToConvert] = useState<Meeting | null>(null)
 
   const [notifiedWa, setNotifiedWa] = useState<Set<string>>(new Set())
@@ -435,13 +437,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCurrentUser((prev) => ({ ...prev, ...data }))
   }
 
-  const connectGoogle = (token: string) => {
+  const connectGoogle = (token: string, email: string) => {
     setGoogleToken(token)
+    setGoogleEmail(email)
     setIsGoogleConnected(true)
   }
 
   const disconnectGoogle = () => {
     setGoogleToken(null)
+    setGoogleEmail(null)
     setIsGoogleConnected(false)
     setMeetings((prev) => prev.filter((m) => m.source !== 'google'))
   }
@@ -707,6 +711,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         deleteMeeting,
         isGoogleConnected,
         googleToken,
+        googleEmail,
         connectGoogle,
         disconnectGoogle,
         updateGoogleMeetings,
