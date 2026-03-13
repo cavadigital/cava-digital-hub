@@ -300,8 +300,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const m1Time = new Date(now.getTime() - 30 * 60000).toTimeString().slice(0, 5)
     const m1End = new Date(now.getTime() - 1 * 60000).toTimeString().slice(0, 5)
 
-    const m2Time = new Date(now.getTime() + 14 * 60000).toTimeString().slice(0, 5)
-    const m2End = new Date(now.getTime() + 44 * 60000).toTimeString().slice(0, 5)
+    const m2Time = new Date(now.getTime() + 15 * 60000).toTimeString().slice(0, 5)
+    const m2End = new Date(now.getTime() + 45 * 60000).toTimeString().slice(0, 5)
 
     return [
       {
@@ -372,7 +372,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const endMs = new Date(now.getFullYear(), now.getMonth(), now.getDate(), eh, em).getTime()
 
           const timeToStart = startMs - currentMs
-          if (timeToStart > 0 && timeToStart <= 15.5 * 60000 && !notifiedWa.has(m.id)) {
+          // Exatamente 15 minutos antes
+          if (timeToStart > 14 * 60000 && timeToStart <= 16 * 60000 && !notifiedWa.has(m.id)) {
             toast.success('Lembrete Automático Enviado 🟢', {
               description: `Mensagem WhatsApp enviada: "Olá! Sua reunião '${m.title}' começará em breve às ${m.time}."`,
             })
@@ -380,14 +381,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
 
           const timeSinceEnd = currentMs - endMs
+          // Logo após o término agendado
           if (timeSinceEnd >= 0 && timeSinceEnd <= 5 * 60000 && !promptedConv.has(m.id)) {
             toast('Reunião Encerrada', {
-              description: `Deseja converter o tempo da reunião "${m.title}" em um registro de horas?`,
+              description: `Deseja converter o tempo da reunião "${m.title}" em um registro de horas para o projeto?`,
               action: {
-                label: 'Converter',
+                label: 'Converter Tempo',
                 onClick: () => setMeetingToConvert(m),
               },
-              duration: 10000,
+              duration: 15000,
             })
             setPromptedConv((prev) => new Set(prev).add(m.id))
           }
@@ -402,22 +404,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setIsGoogleConnected((prev) => {
       const next = !prev
       if (next) {
-        setMeetings((current) => [
-          ...current,
-          {
-            id: 'mock-google-1',
-            date: new Date().toISOString().split('T')[0],
-            time: '11:30',
-            endTime: '12:15',
-            title: 'Sync de Performance - Lojas Renner',
-            type: 'Interna',
-            source: 'google',
-            description: 'Evento sincronizado bidirecionalmente com o Google Calendar.',
-            guests: 'equipe@cavadigital.com.br',
-          },
-        ])
+        setMeetings((current) => {
+          if (current.some((m) => m.id === 'mock-google-1')) return current
+          return [
+            ...current,
+            {
+              id: 'mock-google-1',
+              date: new Date().toISOString().split('T')[0],
+              time: '11:30',
+              endTime: '12:15',
+              title: 'Sync de Performance - Lojas Renner',
+              type: 'Interna',
+              source: 'google',
+              description: 'Evento sincronizado bidirecionalmente com o Google Calendar.',
+              guests: 'equipe@cavadigital.com.br',
+            },
+          ]
+        })
       } else {
-        setMeetings((current) => current.filter((m) => m.id !== 'mock-google-1'))
+        setMeetings((current) => current.filter((m) => m.source !== 'google'))
       }
       return next
     })

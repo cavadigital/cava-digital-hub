@@ -70,7 +70,7 @@ export default function Agenda() {
 
   const previewMeeting =
     activePreview && visibleMeetings.find((m) => m.id === activePreview.id)
-      ? activePreview
+      ? visibleMeetings.find((m) => m.id === activePreview.id)!
       : visibleMeetings[0] || null
 
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false)
@@ -180,22 +180,60 @@ export default function Agenda() {
       source: isGoogleConnected ? 'google' : 'internal',
     }
 
+    const isGoogle = isGoogleConnected
+    setIsSchedulerOpen(false)
+
     if (isEditing && formData.id) {
-      updateMeeting(formData.id, meetingData)
-      toast.success('Reunião atualizada com sucesso!', {
-        description: isGoogleConnected ? 'Sincronizado bidirecionalmente com Google Calendar.' : '',
-      })
-      if (activePreview?.id === formData.id) {
-        setActivePreview({ ...meetingData, id: formData.id } as Meeting)
+      if (isGoogle) {
+        toast.promise(
+          new Promise((resolve, reject) => {
+            setTimeout(() => {
+              // 10% chance to fail randomly to simulate and fulfill the AC for sync errors
+              Math.random() > 0.9 ? reject(new Error('Google API Error')) : resolve(true)
+            }, 800)
+          }),
+          {
+            loading: 'Sincronizando alterações com Google Calendar...',
+            success: () => {
+              updateMeeting(formData.id, meetingData)
+              return 'Reunião atualizada no sistema e no Google Calendar!'
+            },
+            error: () => {
+              updateMeeting(formData.id, meetingData)
+              return 'Salvo localmente, mas ocorreu uma falha de conexão com Google Calendar.'
+            },
+          },
+        )
+      } else {
+        updateMeeting(formData.id, meetingData)
+        toast.success('Reunião atualizada com sucesso!')
       }
     } else {
-      addMeeting(meetingData)
-      toast.success('Reunião agendada com sucesso!', {
-        description: isGoogleConnected ? 'Sincronizado bidirecionalmente com Google Calendar.' : '',
-      })
+      if (isGoogle) {
+        toast.promise(
+          new Promise((resolve, reject) => {
+            setTimeout(() => {
+              Math.random() > 0.9 ? reject(new Error('Google API Error')) : resolve(true)
+            }, 800)
+          }),
+          {
+            loading: 'Criando evento no Google Calendar...',
+            success: () => {
+              addMeeting(meetingData)
+              return 'Agendado com sucesso no sistema e no Google Calendar!'
+            },
+            error: () => {
+              // Saving locally as internal if Google fails
+              addMeeting({ ...meetingData, source: 'internal' })
+              return 'Falha ao sincronizar com Google. Evento salvo apenas localmente.'
+            },
+          },
+        )
+      } else {
+        addMeeting(meetingData)
+        toast.success('Reunião agendada com sucesso!')
+      }
     }
-
-    setIsSchedulerOpen(false)
   }
 
   const handleDelete = (id: string) => {
@@ -229,7 +267,7 @@ export default function Agenda() {
     if (!selectedDate) return []
     const dateStr = selectedDate.toISOString().split('T')[0]
     const dayMeetings = meetings
-      .filter((m) => m.date === dateStr)
+      .filter((m) => m.date === dateStr && (isGoogleConnected || m.source === 'internal'))
       .sort((a, b) => a.time.localeCompare(b.time))
 
     const businessStart = 9 * 60
@@ -276,7 +314,7 @@ export default function Agenda() {
     }
 
     return slots
-  }, [meetings, selectedDate])
+  }, [meetings, selectedDate, isGoogleConnected])
 
   const handleSelectSlot = (slot: any) => {
     setIsAiSuggestionsOpen(false)
@@ -333,7 +371,7 @@ export default function Agenda() {
             <Sparkles className="mr-2 h-4 w-4" /> Sugerir Horários
           </Button>
           <Button onClick={handleOpenCreate}>
-            <Plus className="mr-2 h-4 w-4" /> Agendar
+            <Plus className="mr-2 h-4 w-4" /> Agendar Reunião
           </Button>
         </div>
       </div>
@@ -717,12 +755,16 @@ export default function Agenda() {
               <Button
                 variant="outline"
                 className="h-16 justify-start px-4 hover:bg-muted/50"
-                onClick={() => setGoogleLoginStep('email')}
+                onClick={() => {
+                  setGoogleEmail('')
+                  setGooglePassword('')
+                  setGoogleLoginStep('email')
+                }}
               >
                 <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mr-4 shrink-0">
                   <Users className="w-5 h-5 text-muted-foreground" />
                 </div>
-                <span className="font-medium text-sm">Usar outra conta</span>
+                <span className="font-medium text-sm">Entrar com outra conta</span>
               </Button>
             </div>
           )}
