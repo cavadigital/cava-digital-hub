@@ -64,9 +64,9 @@ export default function Clients() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Clientes & Brand Assets</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Library de Brand Kits</h1>
           <p className="text-muted-foreground">
-            Gerencie o portfólio de clientes e o status de aprovação visual.
+            Gerencie os Kits de Marca (Cores, Fontes e Logos) para uso no Studio Criativo.
           </p>
         </div>
         <div className="relative w-full sm:w-72">
@@ -104,7 +104,7 @@ export default function Clients() {
                   )}
                 </div>
                 <CardTitle className="text-lg">{client.name}</CardTitle>
-                <CardDescription>Assets sincronizados com geradores IA</CardDescription>
+                <CardDescription>Brand Kit sincronizado com a IA</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex gap-2 mb-4 flex-wrap">
@@ -126,7 +126,7 @@ export default function Clients() {
                   className="w-full"
                   onClick={() => handleEdit(client)}
                 >
-                  Gerenciar Marca
+                  Gerenciar Brand Kit
                 </Button>
               </CardContent>
             </Card>
@@ -140,11 +140,11 @@ export default function Clients() {
             <>
               <SheetHeader className="mb-6">
                 <div className="flex items-center gap-2 mb-1">
-                  <Badge variant="secondary">Brand Assets</Badge>
+                  <Badge variant="secondary">Brand Kit Ativo</Badge>
                 </div>
                 <SheetTitle className="text-2xl">{activeClient.name}</SheetTitle>
                 <SheetDescription>
-                  Configure a identidade visual. Atente-se aos feedbacks do cliente.
+                  Configure a identidade visual que será injetada nas criações.
                 </SheetDescription>
               </SheetHeader>
 
@@ -285,7 +285,7 @@ export default function Clients() {
                   <Button variant="outline" onClick={() => setActiveClient(null)}>
                     Cancelar
                   </Button>
-                  <Button onClick={handleSave}>Salvar e Enviar para Aprovação</Button>
+                  <Button onClick={handleSave}>Salvar Brand Kit</Button>
                 </div>
               </div>
             </>
