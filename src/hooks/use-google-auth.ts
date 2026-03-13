@@ -28,7 +28,13 @@ export function useGoogleAuth() {
       return
     }
 
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+    // Use environment variable with fallback to avoid "invalid_client" if .env fails to load,
+    // and trim to ensure no trailing spaces cause 401 errors.
+    const rawClientId =
+      import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+      '325964860086-1g2p73scrd62b71r2n3g8t1mhn4d6qno.apps.googleusercontent.com'
+    const clientId = rawClientId.trim()
+
     if (!clientId) {
       toast.error('Erro de Configuração', {
         description: 'VITE_GOOGLE_CLIENT_ID não está definido nas variáveis de ambiente.',

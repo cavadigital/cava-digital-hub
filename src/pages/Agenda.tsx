@@ -40,6 +40,7 @@ import {
 import { toast } from 'sonner'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale/pt-BR'
 
 const formatDuration = (mins: number) => {
   const h = Math.floor(mins / 60)
@@ -387,7 +388,7 @@ export default function Agenda() {
         const duration = occ.start - current
         slots.push({
           date: selectedDate,
-          dateLabel: format(selectedDate, 'dd/MM/yyyy'),
+          dateLabel: format(selectedDate, 'dd/MM/yyyy', { locale: ptBR }),
           time: `${Math.floor(current / 60)
             .toString()
             .padStart(2, '0')}:${(current % 60).toString().padStart(2, '0')}`,
@@ -405,7 +406,7 @@ export default function Agenda() {
       const duration = businessEnd - current
       slots.push({
         date: selectedDate,
-        dateLabel: format(selectedDate, 'dd/MM/yyyy'),
+        dateLabel: format(selectedDate, 'dd/MM/yyyy', { locale: ptBR }),
         time: `${Math.floor(current / 60)
           .toString()
           .padStart(2, '0')}:${(current % 60).toString().padStart(2, '0')}`,
@@ -737,7 +738,11 @@ export default function Agenda() {
                       className="justify-start text-left font-normal bg-background"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.date ? format(formData.date, 'dd/MM/yyyy') : <span>Selecione</span>}
+                      {formData.date ? (
+                        format(formData.date, 'dd/MM/yyyy', { locale: ptBR })
+                      ) : (
+                        <span>Selecione</span>
+                      )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
