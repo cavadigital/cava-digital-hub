@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { MOCK_FINANCE, MOCK_AGENDA } from '@/lib/data'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid } from 'recharts'
-import { ArrowUpRight, Clock, Plus, MonitorPlay, Zap } from 'lucide-react'
+import { ArrowUpRight, Clock, Plus, MonitorPlay, Zap, Coffee, LogOut, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useBranch } from '@/components/BranchContext'
 import { useAppContext } from '@/components/AppContext'
@@ -42,6 +42,9 @@ export default function Index() {
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false)
   const [newProject, setNewProject] = useState({ title: '', client: '', description: '' })
 
+  const [attendanceState, setAttendanceState] = useState<'idle' | 'working' | 'paused'>('idle')
+  const [lastEntry, setLastEntry] = useState<Date | null>(null)
+
   const activeProjects = projects.filter(
     (p) =>
       p.status !== 'Finalizado' &&
@@ -73,6 +76,18 @@ export default function Index() {
     setNewProject({ title: '', client: '', description: '' })
   }
 
+  const handlePonto = (newState: 'idle' | 'working' | 'paused', actionName: string) => {
+    const now = new Date()
+    setAttendanceState(newState)
+    setLastEntry(now)
+    toast.success('Ponto registrado com sucesso!', {
+      description: `${actionName} às ${now.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })}`,
+    })
+  }
+
   return (
     <div className="space-y-8 animate-fade-in-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -81,14 +96,44 @@ export default function Index() {
           <p className="text-muted-foreground">
             Bem-vindo de volta ao CAVA Digital Hub ({currentBranch}).
           </p>
+          {lastEntry && (
+            <p className="text-sm font-medium text-primary mt-1 animate-fade-in">
+              Status:{' '}
+              {attendanceState === 'working'
+                ? 'Em andamento'
+                : attendanceState === 'paused'
+                  ? 'Em pausa'
+                  : 'Turno encerrado'}{' '}
+              &bull; Último registro às{' '}
+              {lastEntry.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button className="shadow-elevation" onClick={() => setIsNewProjectOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> Novo Projeto
           </Button>
-          <Button variant="secondary">
-            <Clock className="mr-2 h-4 w-4" /> Bater Ponto
-          </Button>
+
+          {attendanceState === 'idle' && (
+            <Button variant="secondary" onClick={() => handlePonto('working', 'Entrada')}>
+              <Clock className="mr-2 h-4 w-4" /> Bater Ponto
+            </Button>
+          )}
+          {attendanceState === 'working' && (
+            <>
+              <Button variant="outline" onClick={() => handlePonto('paused', 'Início de Pausa')}>
+                <Coffee className="mr-2 h-4 w-4" /> Pausa
+              </Button>
+              <Button variant="destructive" onClick={() => handlePonto('idle', 'Saída')}>
+                <LogOut className="mr-2 h-4 w-4" /> Registrar Saída
+              </Button>
+            </>
+          )}
+          {attendanceState === 'paused' && (
+            <Button variant="secondary" onClick={() => handlePonto('working', 'Fim de Pausa')}>
+              <Play className="mr-2 h-4 w-4" /> Voltar da Pausa
+            </Button>
+          )}
         </div>
       </div>
 
