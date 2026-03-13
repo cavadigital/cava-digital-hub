@@ -6,7 +6,7 @@ export const MOCK_PROJECTS = [
     status: 'Em Design',
     branch: 'Curitiba',
     estimatedHours: 120,
-    actualHours: 85,
+    actualHours: 85, // ~70%
   },
   {
     id: '2',
@@ -33,7 +33,7 @@ export const MOCK_PROJECTS = [
     status: 'Aprovação Cliente',
     branch: 'Curitiba',
     estimatedHours: 60,
-    actualHours: 58,
+    actualHours: 58, // > 80% Threshold
   },
   {
     id: '5',
@@ -42,7 +42,7 @@ export const MOCK_PROJECTS = [
     status: 'Finalizado',
     branch: 'Blumenau',
     estimatedHours: 30,
-    actualHours: 25,
+    actualHours: 25, // > 80% Threshold
   },
 ]
 
@@ -108,6 +108,7 @@ export const MOCK_EMPLOYEES = [
         exit: '18:00',
         hours: '8h 10m',
         project: 'Implantação Wake',
+        status: 'Aprovado',
       },
       {
         date: '2023-10-31',
@@ -115,6 +116,7 @@ export const MOCK_EMPLOYEES = [
         exit: '18:00',
         hours: '8h 00m',
         project: 'Implantação Wake',
+        status: 'Aprovado',
       },
       {
         date: '2023-10-30',
@@ -122,6 +124,7 @@ export const MOCK_EMPLOYEES = [
         exit: '18:10',
         hours: '8h 15m',
         project: 'Migração Tray',
+        status: 'Aprovado',
       },
     ],
   },
@@ -142,6 +145,7 @@ export const MOCK_EMPLOYEES = [
         exit: '16:00',
         hours: '6h 00m',
         project: 'Migração Tray',
+        status: 'Aprovado',
       },
       {
         date: '2023-10-31',
@@ -149,6 +153,7 @@ export const MOCK_EMPLOYEES = [
         exit: '18:30',
         hours: '8h 00m',
         project: 'Migração Tray',
+        status: 'Aprovado',
       },
     ],
   },
@@ -168,6 +173,7 @@ export const MOCK_EMPLOYEES = [
         exit: '12:00',
         hours: '3h 00m',
         project: 'Campanha Black Friday',
+        status: 'Aprovado',
       },
       {
         date: '2023-10-31',
@@ -175,6 +181,7 @@ export const MOCK_EMPLOYEES = [
         exit: '18:00',
         hours: '8h 15m',
         project: 'Nova Home Nuvemshop',
+        status: 'Aprovado',
       },
     ],
   },

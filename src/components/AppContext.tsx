@@ -55,12 +55,24 @@ export type Project = {
   actualHours?: number
 }
 
+export type TimeLogStatus = 'Rascunho' | 'Pendente' | 'Aprovado' | 'Rejeitado'
+
 export type TimeLog = {
   id: string
   date: string
   time: string
   type: string
   project?: string
+  status: TimeLogStatus
+}
+
+export type TeamLog = {
+  id: string
+  empName: string
+  date: string
+  hours: string
+  project: string
+  status: TimeLogStatus
 }
 
 interface AppContextType {
@@ -87,11 +99,14 @@ interface AppContextType {
   attendanceState: 'idle' | 'working' | 'paused'
   lastEntry: Date | null
   myTimeLogs: TimeLog[]
+  teamLogs: TeamLog[]
   setAttendanceRecord: (
     newState: 'idle' | 'working' | 'paused',
     actionName: string,
     project?: string,
   ) => void
+  requestTimeLogApproval: (id: string) => void
+  reviewTeamLog: (id: string, newStatus: 'Aprovado' | 'Rejeitado') => void
   weeklyGoal: number
   setWeeklyGoal: (goal: number) => void
 }
@@ -184,6 +199,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const [attendanceState, setAttendanceState] = useState<'idle' | 'working' | 'paused'>('idle')
   const [lastEntry, setLastEntry] = useState<Date | null>(null)
+
   const [myTimeLogs, setMyTimeLogs] = useState<TimeLog[]>([
     {
       id: '1',
@@ -191,6 +207,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
       time: '08:55',
       type: 'Entrada',
       project: '-',
+      status: 'Rascunho',
+    },
+  ])
+
+  const [teamLogs, setTeamLogs] = useState<TeamLog[]>([
+    {
+      id: 't1',
+      empName: 'Ana Silva',
+      date: new Date().toLocaleDateString('pt-BR'),
+      hours: '4h 30m',
+      project: 'Implantação Wake',
+      status: 'Pendente',
+    },
+    {
+      id: 't2',
+      empName: 'Carlos Santos',
+      date: new Date().toLocaleDateString('pt-BR'),
+      hours: '6h 00m',
+      project: 'Migração Tray',
+      status: 'Pendente',
     },
   ])
 
@@ -211,9 +247,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
         time: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         type: actionName,
         project: project || '-',
+        status: 'Rascunho',
       },
       ...prev,
     ])
+  }
+
+  const requestTimeLogApproval = (id: string) => {
+    setMyTimeLogs((prev) => prev.map((l) => (l.id === id ? { ...l, status: 'Pendente' } : l)))
+    const log = myTimeLogs.find((l) => l.id === id)
+    if (log) {
+      setTeamLogs((prev) => [
+        {
+          id: log.id,
+          empName: 'Admin CAVA',
+          date: log.date,
+          hours: 'Em andamento',
+          project: log.project || '-',
+          status: 'Pendente',
+        },
+        ...prev,
+      ])
+    }
+  }
+
+  const reviewTeamLog = (id: string, newStatus: 'Aprovado' | 'Rejeitado') => {
+    setTeamLogs((prev) => prev.map((l) => (l.id === id ? { ...l, status: newStatus } : l)))
+    setMyTimeLogs((prev) => prev.map((l) => (l.id === id ? { ...l, status: newStatus } : l)))
   }
 
   const addPrompt = (p: Omit<Prompt, 'id'>) => {
@@ -295,7 +355,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         attendanceState,
         lastEntry,
         myTimeLogs,
+        teamLogs,
         setAttendanceRecord,
+        requestTimeLogApproval,
+        reviewTeamLog,
         weeklyGoal,
         setWeeklyGoal,
       }}

@@ -20,11 +20,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useBranch } from '@/components/BranchContext'
 import { MOCK_EMPLOYEES } from '@/lib/data'
-import { UserPlus, Clock, Download, FileText } from 'lucide-react'
+import { UserPlus, Clock, Download, FileText, CheckCircle2, XCircle } from 'lucide-react'
+import { useAppContext } from '@/components/AppContext'
 import { toast } from 'sonner'
 
 export default function HR() {
   const { currentBranch } = useBranch()
+  const { teamLogs, reviewTeamLog } = useAppContext()
   const [selectedEmp, setSelectedEmp] = useState<any>(null)
 
   const employees = MOCK_EMPLOYEES.filter(
@@ -35,10 +37,12 @@ export default function HR() {
     const headers = 'Colaborador,Data,Entrada,Saída,Total Horas,Projeto\n'
     const rows = employees
       .flatMap((emp) =>
-        emp.recentLogs?.map(
-          (log) =>
-            `${emp.name},${log.date},${log.entry},${log.exit},${log.hours},${log.project || 'Geral'}`,
-        ),
+        (emp.recentLogs || [])
+          .filter((log: any) => log.status === 'Aprovado' || log.status === 'Approved')
+          .map(
+            (log: any) =>
+              `${emp.name},${log.date},${log.entry},${log.exit},${log.hours},${log.project || 'Geral'}`,
+          ),
       )
       .join('\n')
     const csv = headers + rows
@@ -49,7 +53,7 @@ export default function HR() {
     a.setAttribute('download', 'relatorio_folha.csv')
     a.click()
     toast.success('CSV exportado com sucesso!', {
-      description: 'Pronto para processamento na Folha.',
+      description: 'Apenas pontos aprovados foram incluídos.',
     })
   }
 
@@ -62,13 +66,12 @@ export default function HR() {
 
   return (
     <>
-      {/* View for normal display */}
-      <div className="space-y-6 animate-fade-in print:hidden">
+      <div className="space-y-6 animate-fade-in print:hidden max-w-6xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Gestão de Equipe</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Gestão de Equipe & RH</h1>
             <p className="text-muted-foreground">
-              Acompanhe a atividade, assiduidade e relatórios ({currentBranch}).
+              Acompanhe a atividade, assiduidade e gerencie aprovações de ponto ({currentBranch}).
             </p>
           </div>
           <Button className="bg-foreground text-background hover:bg-foreground/90">
@@ -77,9 +80,15 @@ export default function HR() {
         </div>
 
         <Tabs defaultValue="painel" className="w-full">
-          <TabsList className="grid w-full max-w-[400px] grid-cols-2 mb-6">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3 mb-6">
             <TabsTrigger value="painel">Painel de Produtividade</TabsTrigger>
-            <TabsTrigger value="relatorios">Relatórios de Equipe</TabsTrigger>
+            <TabsTrigger value="aprovacoes" className="relative">
+              Aprovações de Ponto
+              {teamLogs.filter((l) => l.status === 'Pendente').length > 0 && (
+                <span className="absolute top-1 right-2 h-2 w-2 rounded-full bg-destructive animate-pulse" />
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="relatorios">Folha & Relatórios</TabsTrigger>
           </TabsList>
 
           <TabsContent value="painel" className="space-y-6">
@@ -163,13 +172,82 @@ export default function HR() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="aprovacoes" className="space-y-6">
+            <Card className="shadow-subtle border-t-4 border-t-primary">
+              <CardHeader>
+                <CardTitle>Aprovações Pendentes</CardTitle>
+                <CardDescription>Revise e aprove as horas submetidas pela equipe.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Colaborador</TableHead>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Horas</TableHead>
+                      <TableHead>Projeto</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {teamLogs.filter((l) => l.status === 'Pendente').length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
+                          Nenhuma solicitação de aprovação pendente.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {teamLogs
+                      .filter((l) => l.status === 'Pendente')
+                      .map((log) => (
+                        <TableRow key={log.id} className="hover:bg-muted/30">
+                          <TableCell className="font-medium">{log.empName}</TableCell>
+                          <TableCell>{log.date}</TableCell>
+                          <TableCell className="font-mono">{log.hours}</TableCell>
+                          <TableCell className="text-muted-foreground">{log.project}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">Pendente</Badge>
+                          </TableCell>
+                          <TableCell className="text-right flex items-center justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-success text-success hover:bg-success/10"
+                              onClick={() => {
+                                reviewTeamLog(log.id, 'Aprovado')
+                                toast.success(`Ponto aprovado para ${log.empName}`)
+                              }}
+                            >
+                              <CheckCircle2 className="w-4 h-4 mr-1" /> Aprovar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-destructive text-destructive hover:bg-destructive/10"
+                              onClick={() => {
+                                reviewTeamLog(log.id, 'Rejeitado')
+                                toast.error(`Ponto rejeitado para ${log.empName}`)
+                              }}
+                            >
+                              <XCircle className="w-4 h-4 mr-1" /> Rejeitar
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="relatorios" className="space-y-6 animate-fade-in-up">
             <Card className="shadow-subtle">
               <CardHeader className="flex flex-row items-center justify-between pb-4">
                 <div>
                   <CardTitle>Exportação de Folha de Pagamento</CardTitle>
                   <CardDescription>
-                    Gere os relatórios consolidados de pontos batidos.
+                    Gere os relatórios consolidados apenas com pontos validados/aprovados.
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
@@ -187,7 +265,7 @@ export default function HR() {
                     <TableRow>
                       <TableHead>Colaborador</TableHead>
                       <TableHead>Contrato</TableHead>
-                      <TableHead>Total de Horas (Mês)</TableHead>
+                      <TableHead>Total de Horas Aprovadas</TableHead>
                       <TableHead className="text-right">Visualizar</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -252,10 +330,12 @@ export default function HR() {
                             <Badge
                               variant="secondary"
                               className={
-                                log.hours === 'Em andamento' ? 'bg-success/10 text-success' : ''
+                                log.status === 'Aprovado'
+                                  ? 'bg-success/10 text-success border-success/20'
+                                  : ''
                               }
                             >
-                              {log.hours}
+                              {log.hours} • {log.status || 'Valido'}
                             </Badge>
                           </div>
                           {log.project && (
@@ -274,7 +354,6 @@ export default function HR() {
         </Sheet>
       </div>
 
-      {/* View purely for PDF print layout */}
       <div className="hidden print:block p-8 bg-white text-black min-h-screen">
         <h1 className="text-3xl font-bold mb-2">Relatório de Horas e Folha - CAVA Digital</h1>
         <p className="text-sm mb-8 text-gray-600 border-b pb-4">
@@ -294,21 +373,25 @@ export default function HR() {
           </thead>
           <tbody>
             {employees.flatMap((emp) =>
-              emp.recentLogs?.map((log, i) => (
-                <tr key={`${emp.id}-${i}`}>
-                  <td className="border border-gray-300 p-2">{emp.name}</td>
-                  <td className="border border-gray-300 p-2">{log.date}</td>
-                  <td className="border border-gray-300 p-2">{log.entry}</td>
-                  <td className="border border-gray-300 p-2">{log.exit}</td>
-                  <td className="border border-gray-300 p-2 font-medium">{log.hours}</td>
-                  <td className="border border-gray-300 p-2 text-gray-600">{log.project || '-'}</td>
-                </tr>
-              )),
+              (emp.recentLogs || [])
+                .filter((log: any) => log.status === 'Aprovado' || log.status === 'Approved')
+                .map((log: any, i: number) => (
+                  <tr key={`${emp.id}-${i}`}>
+                    <td className="border border-gray-300 p-2">{emp.name}</td>
+                    <td className="border border-gray-300 p-2">{log.date}</td>
+                    <td className="border border-gray-300 p-2">{log.entry}</td>
+                    <td className="border border-gray-300 p-2">{log.exit}</td>
+                    <td className="border border-gray-300 p-2 font-medium">{log.hours}</td>
+                    <td className="border border-gray-300 p-2 text-gray-600">
+                      {log.project || '-'}
+                    </td>
+                  </tr>
+                )),
             )}
           </tbody>
         </table>
         <p className="mt-12 text-center text-xs text-gray-400">
-          CAVA Digital Hub • Confidencial Financeiro
+          CAVA Digital Hub • Apenas Pontos Aprovados
         </p>
       </div>
     </>

@@ -43,6 +43,15 @@ export default function Projects() {
     (p) => currentBranch === 'Consolidado' || p.branch === currentBranch,
   )
 
+  const overBudgetProjects = filteredProjects.filter(
+    (p) =>
+      p.estimatedHours &&
+      p.actualHours &&
+      p.actualHours / p.estimatedHours >= 0.8 &&
+      p.status !== 'Finalizado' &&
+      p.status !== 'Aprovado',
+  )
+
   const handleShare = (id: string) => {
     const project = projects.find((p) => p.id === id)
     const client = clients.find((c) => c.name === project?.client)
@@ -79,6 +88,34 @@ export default function Projects() {
         </div>
       </div>
 
+      {overBudgetProjects.length > 0 && (
+        <div className="flex flex-col gap-3 mb-2 animate-fade-in-up">
+          {overBudgetProjects.map((p) => {
+            const pct = Math.round(((p.actualHours || 0) / (p.estimatedHours || 1)) * 100)
+            const isCritical = pct >= 100
+            return (
+              <div
+                key={p.id}
+                className={`flex items-center gap-3 p-4 rounded-xl border shadow-sm ${
+                  isCritical
+                    ? 'bg-destructive/10 border-destructive/30 text-destructive'
+                    : 'bg-warning/10 border-warning/30 text-yellow-600'
+                }`}
+              >
+                <AlertCircle className="h-5 w-5 shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-sm">Alerta de Orçamento: {p.title}</h4>
+                  <p className="text-xs opacity-90">
+                    O projeto atingiu {pct}% da capacidade estimada ({p.actualHours}/
+                    {p.estimatedHours}h).
+                  </p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       <div className="flex-1 overflow-x-auto pb-4">
         <div className="flex gap-6 h-full min-h-[600px] w-max">
           {COLUMNS.map((col) => (
@@ -96,42 +133,51 @@ export default function Projects() {
               <div className="flex flex-col gap-3 flex-1">
                 {filteredProjects
                   .filter((p) => p.status === col)
-                  .map((project) => (
-                    <Card
-                      key={project.id}
-                      className="cursor-pointer hover:border-primary/50 transition-colors shadow-subtle group"
-                      onClick={() => setActiveCard(project)}
-                    >
-                      <CardHeader className="p-4 pb-2">
-                        <div className="flex justify-between items-start">
-                          <Badge variant="outline" className="text-[10px] mb-2">
-                            {project.client}
-                          </Badge>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity -mt-1 -mr-1"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <CardTitle className="text-sm font-medium leading-tight">
-                          {project.title}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-2 flex gap-3 text-muted-foreground">
-                        <div className="flex items-center text-xs gap-1">
-                          <MessageSquare className="h-3 w-3" /> 2
-                        </div>
-                        <div className="flex items-center text-xs gap-1">
-                          <Paperclip className="h-3 w-3" /> 1
-                        </div>
-                        <div className="flex items-center text-xs gap-1 ml-auto">
-                          <Clock className="h-3 w-3" /> Ontem
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  .map((project) => {
+                    const ratio = (project.actualHours || 0) / (project.estimatedHours || 1)
+                    const isOver = ratio >= 0.8 && project.status !== 'Finalizado'
+
+                    return (
+                      <Card
+                        key={project.id}
+                        className={`cursor-pointer transition-colors shadow-subtle group ${isOver ? 'border-warning/50' : 'hover:border-primary/50'}`}
+                        onClick={() => setActiveCard(project)}
+                      >
+                        <CardHeader className="p-4 pb-2">
+                          <div className="flex justify-between items-start">
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] mb-2 ${isOver ? 'border-warning/50 text-warning' : ''}`}
+                            >
+                              {project.client}
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity -mt-1 -mr-1"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <CardTitle className="text-sm font-medium leading-tight">
+                            {project.title}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-2 flex gap-3 text-muted-foreground">
+                          <div className="flex items-center text-xs gap-1">
+                            <MessageSquare className="h-3 w-3" /> 2
+                          </div>
+                          <div className="flex items-center text-xs gap-1">
+                            <Paperclip className="h-3 w-3" /> 1
+                          </div>
+                          <div className="flex items-center text-xs gap-1 ml-auto">
+                            {isOver && <AlertCircle className="h-3 w-3 text-warning" />}
+                            <Clock className="h-3 w-3 ml-1" /> Ontem
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
 
                 <Button
                   variant="ghost"
@@ -176,22 +222,35 @@ export default function Projects() {
                       <span>Estimado: {activeCard.estimatedHours || 0}h</span>
                       <span>Realizado: {activeCard.actualHours || 0}h</span>
                     </div>
-                    <Progress
-                      value={Math.min(
-                        ((activeCard.actualHours || 0) / (activeCard.estimatedHours || 1)) * 100,
-                        100,
-                      )}
-                      indicatorColor={
-                        (activeCard.actualHours || 0) > (activeCard.estimatedHours || 0)
+                    {(() => {
+                      const ratio = (activeCard.actualHours || 0) / (activeCard.estimatedHours || 1)
+                      const indicatorClass =
+                        ratio >= 1
                           ? 'bg-destructive'
-                          : 'bg-success'
-                      }
-                      className="h-2"
-                    />
-                    {(activeCard.actualHours || 0) > (activeCard.estimatedHours || 0) && (
-                      <p className="text-xs text-destructive mt-1 font-semibold flex items-center">
-                        <AlertCircle className="w-3 h-3 mr-1" /> Projeto excedeu a estimativa de
-                        horas
+                          : ratio >= 0.8
+                            ? 'bg-yellow-500'
+                            : 'bg-success'
+                      return (
+                        <Progress
+                          value={Math.min(ratio * 100, 100)}
+                          indicatorColor={indicatorClass}
+                          className="h-2"
+                        />
+                      )
+                    })()}
+
+                    {(activeCard.actualHours || 0) >= (activeCard.estimatedHours || 0) * 0.8 && (
+                      <p
+                        className={`text-xs mt-1 font-semibold flex items-center ${
+                          (activeCard.actualHours || 0) >= (activeCard.estimatedHours || 0)
+                            ? 'text-destructive'
+                            : 'text-yellow-600'
+                        }`}
+                      >
+                        <AlertCircle className="w-3 h-3 mr-1" />
+                        {(activeCard.actualHours || 0) >= (activeCard.estimatedHours || 0)
+                          ? 'Projeto excedeu a estimativa de horas'
+                          : 'Projeto próximo do limite de horas estimadas'}
                       </p>
                     )}
                   </div>

@@ -24,6 +24,7 @@ import NotificationSettings from './pages/NotificationSettings'
 import ClientApproval from './pages/ClientApproval'
 import Ecosystem from './pages/Ecosystem'
 import Profile from './pages/Profile'
+import ExecutiveDashboard from './pages/ExecutiveDashboard'
 
 const App = () => (
   <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/devhub" element={<DevHub />} />
               <Route path="/marketing" element={<MarketingHub />} />
               <Route path="/rh" element={<HR />} />
+              <Route path="/dashboard-executivo" element={<ExecutiveDashboard />} />
               <Route path="/deploy-monitor" element={<DeployMonitor />} />
               <Route path="/portal-cliente" element={<ClientPortal />} />
               <Route path="/analytics" element={<Analytics />} />

@@ -17,9 +17,10 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { MOCK_HOURS_PER_PROJECT_WEEK, MOCK_HOURS_PER_PROJECT_MONTH } from '@/lib/data'
+import { toast } from 'sonner'
 
 export default function Profile() {
-  const { myTimeLogs, attendanceState } = useAppContext()
+  const { myTimeLogs, attendanceState, requestTimeLogApproval } = useAppContext()
   const [timeView, setTimeView] = useState<'week' | 'month'>('week')
 
   const [startDate, setStartDate] = useState('')
@@ -28,10 +29,9 @@ export default function Profile() {
   const chartData = timeView === 'week' ? MOCK_HOURS_PER_PROJECT_WEEK : MOCK_HOURS_PER_PROJECT_MONTH
   const totalHours = chartData.reduce((acc, curr) => acc + curr.hours, 0)
 
-  // Simple filter logic for mock demonstration
   const filteredLogs = myTimeLogs.filter((log) => {
     if (!startDate && !endDate) return true
-    return true // We keep it true for demo as dates are localized strings
+    return true
   })
 
   return (
@@ -222,12 +222,14 @@ export default function Profile() {
                     <TableHead>Horário</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Projeto Associado</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredLogs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
+                      <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
                         Nenhum registro encontrado para este período.
                       </TableCell>
                     </TableRow>
@@ -239,20 +241,42 @@ export default function Profile() {
                           {log.time}
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant={
-                              log.type === 'Entrada' || log.type === 'Retorno'
-                                ? 'default'
-                                : 'secondary'
-                            }
-                            className={
-                              log.type === 'Entrada' ? 'bg-success hover:bg-success text-white' : ''
-                            }
-                          >
-                            {log.type}
-                          </Badge>
+                          <Badge variant="outline">{log.type}</Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground">{log.project}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              log.status === 'Aprovado'
+                                ? 'default'
+                                : log.status === 'Rejeitado'
+                                  ? 'destructive'
+                                  : 'secondary'
+                            }
+                            className={
+                              log.status === 'Aprovado'
+                                ? 'bg-success hover:bg-success text-white'
+                                : ''
+                            }
+                          >
+                            {log.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {log.status === 'Rascunho' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs h-8"
+                              onClick={() => {
+                                requestTimeLogApproval(log.id)
+                                toast.success('Aprovação solicitada com sucesso!')
+                              }}
+                            >
+                              Solicitar Aprovação
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))
                   )}

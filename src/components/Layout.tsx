@@ -31,6 +31,7 @@ import {
   BarChart3,
   BookOpen,
   User,
+  TrendingUp,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
@@ -54,6 +55,7 @@ import { useBranch } from './BranchContext'
 
 const navItems = [
   { title: 'Dashboard', icon: LayoutDashboard, url: '/' },
+  { title: 'Dash Executivo', icon: TrendingUp, url: '/dashboard-executivo' },
   { title: 'Agenda', icon: CalendarDays, url: '/agenda' },
   { title: 'Projetos', icon: Kanban, url: '/projetos' },
   { title: 'Clientes', icon: Briefcase, url: '/clientes' },
