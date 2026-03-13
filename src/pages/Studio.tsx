@@ -1,11 +1,41 @@
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Wand2, PlaySquare, Image as ImageIcon, Download, Share2 } from 'lucide-react'
+import { Label } from '@/components/ui/label'
+import {
+  Wand2,
+  PlaySquare,
+  Image as ImageIcon,
+  Download,
+  Share2,
+  UploadCloud,
+  Loader2,
+} from 'lucide-react'
 
 export default function Studio() {
+  const [customSize, setCustomSize] = useState(false)
+  const [preset, setPreset] = useState('1080x1080')
+  const [width, setWidth] = useState('1080')
+  const [height, setHeight] = useState('1080')
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null)
+
+  const handleGenerate = () => {
+    setIsGenerating(true)
+    // Simulate AI generation process
+    setTimeout(() => {
+      const finalW = customSize ? width : preset.split('x')[0]
+      const finalH = customSize ? height : preset.split('x')[1]
+      setGeneratedImage(
+        `https://img.usecurling.com/p/${finalW}/${finalH}?q=marketing%20banner&color=gradient`,
+      )
+      setIsGenerating(false)
+    }, 2500)
+  }
+
   return (
     <div className="space-y-6 h-[calc(100vh-120px)] flex flex-col animate-fade-in">
       <div className="flex justify-between items-center shrink-0">
@@ -41,59 +71,154 @@ export default function Studio() {
         <div className="flex-1 bg-muted/20 border rounded-xl mt-6 overflow-hidden flex shadow-subtle relative">
           <TabsContent
             value="ai"
-            className="m-0 p-6 flex flex-col w-full data-[state=active]:flex h-full"
+            className="m-0 p-6 flex flex-col w-full data-[state=active]:flex h-full overflow-y-auto"
           >
-            <div className="grid md:grid-cols-2 gap-8 h-full">
-              <div className="space-y-6 flex flex-col justify-center">
+            <div className="grid lg:grid-cols-2 gap-8 h-full min-h-max">
+              <div className="space-y-6 flex flex-col">
                 <div>
-                  <h2 className="text-2xl font-semibold mb-2">Geração de Banners</h2>
+                  <h2 className="text-2xl font-semibold mb-2">AI Banner Studio</h2>
                   <p className="text-muted-foreground text-sm">
-                    Descreva o conceito e deixe a IA da CAVA criar variações de alta fidelidade para
-                    campanhas.
+                    Gere banners de alta conversão. Configure as dimensões e forneça uma identidade
+                    visual para a IA seguir.
                   </p>
                 </div>
 
-                <div className="space-y-4 bg-background p-6 rounded-xl border shadow-sm">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Dimensões</label>
-                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                      <option>1080x1080 (Feed)</option>
-                      <option>1080x1920 (Stories/Reels)</option>
-                      <option>1200x628 (Facebook Ads)</option>
-                    </select>
+                <div className="space-y-5 bg-background p-6 rounded-xl border shadow-sm flex-1">
+                  <div className="space-y-3">
+                    <Label>Dimensões do Banner</Label>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant={!customSize && preset === '1080x1080' ? 'default' : 'outline'}
+                        onClick={() => {
+                          setPreset('1080x1080')
+                          setCustomSize(false)
+                        }}
+                        size="sm"
+                        className="text-xs"
+                      >
+                        Square 1080x1080
+                      </Button>
+                      <Button
+                        variant={!customSize && preset === '1080x1920' ? 'default' : 'outline'}
+                        onClick={() => {
+                          setPreset('1080x1920')
+                          setCustomSize(false)
+                        }}
+                        size="sm"
+                        className="text-xs"
+                      >
+                        Story 1080x1920
+                      </Button>
+                      <Button
+                        variant={customSize ? 'default' : 'outline'}
+                        onClick={() => setCustomSize(true)}
+                        size="sm"
+                        className="text-xs"
+                      >
+                        Custom Size
+                      </Button>
+                    </div>
+
+                    {customSize && (
+                      <div className="flex gap-4 pt-2 animate-fade-in-down">
+                        <div className="space-y-1.5 flex-1">
+                          <Label className="text-xs text-muted-foreground">Width (px)</Label>
+                          <Input
+                            type="number"
+                            placeholder="Largura"
+                            value={width}
+                            onChange={(e) => setWidth(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1.5 flex-1">
+                          <Label className="text-xs text-muted-foreground">Height (px)</Label>
+                          <Input
+                            type="number"
+                            placeholder="Altura"
+                            value={height}
+                            onChange={(e) => setHeight(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
+
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Prompt Criativo</label>
+                    <Label>Reference Layout/Visual Identity</Label>
+                    <div className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center text-center bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group">
+                      <UploadCloud className="h-8 w-8 text-muted-foreground mb-2 group-hover:text-primary transition-colors" />
+                      <p className="text-sm font-medium">Faça upload da identidade visual</p>
+                      <p className="text-xs text-muted-foreground">PNG, JPG ou PDF (Máx 10MB)</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Banner Description</Label>
                     <Textarea
-                      placeholder="Ex: Um banner moderno para e-commerce de moda feminina, tema verão, cores vibrantes com destaque para um cupom de 20% OFF."
-                      className="min-h-[120px] resize-none"
+                      placeholder="Descreva o cenário, elementos em destaque, paleta de cores e o objetivo da campanha..."
+                      className="min-h-[100px] resize-none"
                     />
                   </div>
+
                   <Button
-                    className="w-full font-bold text-lg h-12 shadow-md hover:shadow-lg transition-all"
+                    className="w-full font-bold text-base h-12 shadow-md hover:shadow-lg transition-all"
                     size="lg"
+                    onClick={handleGenerate}
+                    disabled={isGenerating}
                   >
-                    <Wand2 className="mr-2 h-5 w-5" /> Gerar Variações
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Gerando Variações...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="mr-2 h-5 w-5" /> Generate Banner
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
 
-              <div className="bg-muted/50 rounded-xl border-dashed border-2 border-border flex items-center justify-center relative overflow-hidden group">
+              <div className="bg-muted/50 rounded-xl border border-border flex items-center justify-center relative overflow-hidden group min-h-[400px]">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent z-0"></div>
-                <div className="text-center space-y-4 relative z-10 p-8">
-                  <div className="mx-auto w-16 h-16 rounded-full bg-background flex items-center justify-center shadow-sm">
-                    <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+
+                {generatedImage && !isGenerating ? (
+                  <div className="relative z-10 p-4 w-full h-full flex flex-col items-center justify-center animate-fade-in">
+                    <img
+                      src={generatedImage}
+                      alt="Banner Gerado"
+                      className="max-w-full max-h-[80%] object-contain rounded-md shadow-elevation border"
+                    />
+                    <div className="mt-6 flex gap-3">
+                      <Button variant="secondary" className="shadow-sm">
+                        <Download className="mr-2 h-4 w-4" /> Baixar
+                      </Button>
+                      <Button className="shadow-sm">
+                        <Share2 className="mr-2 h-4 w-4" /> Enviar para Aprovação
+                      </Button>
+                    </div>
                   </div>
-                  <p className="text-muted-foreground text-sm max-w-[250px]">
-                    Aguardando prompt para gerar imagens exclusivas...
-                  </p>
-                </div>
+                ) : (
+                  <div className="text-center space-y-4 relative z-10 p-8">
+                    <div className="mx-auto w-16 h-16 rounded-full bg-background flex items-center justify-center shadow-sm">
+                      {isGenerating ? (
+                        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                      ) : (
+                        <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+                      )}
+                    </div>
+                    <p className="text-muted-foreground text-sm max-w-[250px]">
+                      {isGenerating
+                        ? 'A IA está analisando a identidade visual e compondo o banner...'
+                        : 'Aguardando configuração para gerar imagens exclusivas...'}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </TabsContent>
 
           <TabsContent value="design" className="m-0 flex w-full h-full data-[state=active]:flex">
-            {/* Mock Design Editor */}
             <div className="w-64 border-r bg-background p-4 flex flex-col gap-4">
               <div className="font-semibold text-sm">Ferramentas</div>
               <div className="grid grid-cols-2 gap-2">
@@ -126,7 +251,6 @@ export default function Studio() {
             value="video"
             className="m-0 flex flex-col w-full h-full data-[state=active]:flex"
           >
-            {/* Mock Video Editor */}
             <div className="flex-1 flex">
               <div className="w-72 border-r bg-background p-4">
                 <div className="font-semibold text-sm mb-4">Mídia do Projeto</div>
