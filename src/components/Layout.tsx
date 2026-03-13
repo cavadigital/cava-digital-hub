@@ -77,7 +77,7 @@ export default function Layout() {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background text-foreground">
-        <Sidebar className="border-r border-sidebar-border shadow-elevation">
+        <Sidebar className="border-r border-sidebar-border shadow-elevation print:hidden">
           <SidebarHeader className="p-4 flex items-center justify-center h-20">
             <div className="flex items-center gap-2 font-bold text-2xl tracking-tighter">
               <span className="text-sidebar-primary-foreground">CAVA</span>
@@ -136,8 +136,8 @@ export default function Layout() {
           </SidebarFooter>
         </Sidebar>
 
-        <SidebarInset className="flex flex-col flex-1 overflow-hidden w-full">
-          <header className="h-20 shrink-0 border-b bg-background/80 glass-effect flex items-center justify-between px-6 sticky top-0 z-10">
+        <SidebarInset className="flex flex-col flex-1 overflow-hidden w-full print:w-full print:bg-white print:overflow-visible">
+          <header className="h-20 shrink-0 border-b bg-background/80 glass-effect flex items-center justify-between px-6 sticky top-0 z-10 print:hidden">
             <div className="flex items-center gap-4 flex-1">
               <SidebarTrigger />
               <div className="relative w-full max-w-md hidden md:flex">
@@ -191,7 +191,7 @@ export default function Layout() {
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto p-6 md:p-8 bg-background animate-fade-in">
+          <main className="flex-1 overflow-auto p-6 md:p-8 bg-background animate-fade-in print:p-0 print:m-0 print:overflow-visible">
             <Outlet />
           </main>
         </SidebarInset>

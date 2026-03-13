@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   Sheet,
   SheetContent,
@@ -11,22 +12,36 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 import { useAppContext, Client, AssetItem } from '@/components/AppContext'
-import { UploadCloud, Plus, X, Search, Briefcase, Palette, Type, AlertCircle } from 'lucide-react'
+import {
+  UploadCloud,
+  Plus,
+  X,
+  Search,
+  Briefcase,
+  Palette,
+  Type,
+  AlertCircle,
+  MessageSquare,
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
 export default function Clients() {
-  const { clients, updateClientAssets } = useAppContext()
+  const { clients, updateClientAssets, updateClientPreferences } = useAppContext()
   const [search, setSearch] = useState('')
   const [activeClient, setActiveClient] = useState<Client | null>(null)
   const [editedColors, setEditedColors] = useState<AssetItem<string>[]>([])
   const [editedFonts, setEditedFonts] = useState<AssetItem<{ primary: string; secondary: string }>>(
     { value: { primary: '', secondary: '' }, status: 'Pending' },
   )
+  const [editedPhone, setEditedPhone] = useState('')
+  const [editedNotify, setEditedNotify] = useState(false)
 
   const handleEdit = (client: Client) => {
     setActiveClient(client)
     setEditedColors([...client.assets.colors])
     setEditedFonts({ ...client.assets.fonts })
+    setEditedPhone(client.phone || '')
+    setEditedNotify(client.notifyWhatsApp || false)
   }
 
   const handleSave = () => {
@@ -36,6 +51,7 @@ export default function Clients() {
         colors: editedColors,
         fonts: editedFonts,
       })
+      updateClientPreferences(activeClient.id, editedPhone, editedNotify)
       setActiveClient(null)
     }
   }
@@ -149,6 +165,33 @@ export default function Clients() {
               </SheetHeader>
 
               <div className="space-y-8">
+                {/* Communication Settings */}
+                <div className="space-y-3 pb-6 border-b">
+                  <h4 className="text-sm font-semibold flex items-center">
+                    <MessageSquare className="w-4 h-4 mr-2" /> Preferências de Comunicação
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 bg-muted/30 p-4 rounded-xl border">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">WhatsApp Cliente</Label>
+                      <Input
+                        value={editedPhone}
+                        onChange={(e) => setEditedPhone(e.target.value)}
+                        placeholder="Ex: 5511999999999"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2 pt-6">
+                      <Switch
+                        id="notify-wa"
+                        checked={editedNotify}
+                        onCheckedChange={setEditedNotify}
+                      />
+                      <Label htmlFor="notify-wa" className="text-xs cursor-pointer">
+                        Ativar Alertas p/ Aprovação
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Logos Section */}
                 <div className="space-y-3">
                   <h4 className="text-sm font-semibold flex items-center">

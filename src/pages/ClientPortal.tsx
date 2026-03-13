@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -24,6 +25,8 @@ import {
   MousePointerClick,
   ShoppingCart,
   TrendingUp,
+  FileText,
+  Sparkles,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -124,7 +127,7 @@ export default function ClientPortal() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-fade-in-up pb-12">
-      <div className="bg-primary/5 border border-primary/20 p-8 rounded-2xl shadow-sm text-center">
+      <div className="bg-primary/5 border border-primary/20 p-8 rounded-2xl shadow-sm text-center print:hidden">
         <Target className="h-10 w-10 text-primary mx-auto mb-4" />
         <h2 className="text-2xl font-bold mb-2">Portal Transparente do Cliente</h2>
         <p className="text-muted-foreground text-sm max-w-lg mx-auto mb-6">
@@ -147,7 +150,7 @@ export default function ClientPortal() {
 
       {client && (
         <Tabs defaultValue="live" className="w-full">
-          <TabsList className="mb-6 grid w-full grid-cols-3 max-w-2xl mx-auto h-12">
+          <TabsList className="mb-6 grid w-full grid-cols-3 max-w-2xl mx-auto h-12 print:hidden">
             <TabsTrigger value="live" className="text-sm">
               Live Assets
             </TabsTrigger>
@@ -239,6 +242,69 @@ export default function ClientPortal() {
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6 animate-fade-in">
+            {/* Header for print only */}
+            <div className="hidden print:block border-b pb-4 mb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Target className="h-6 w-6 text-primary" />
+                <h1 className="text-2xl font-bold">Relatório de Performance Mensal</h1>
+              </div>
+              <p className="text-muted-foreground">
+                Cliente: <strong>{client.name}</strong> • Gerado em:{' '}
+                {new Date().toLocaleDateString()}
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center print:hidden mb-2 gap-4">
+              <h3 className="text-xl font-bold">Analytics Avançado</h3>
+              <Button
+                onClick={() => window.print()}
+                variant="outline"
+                className="shadow-sm border-primary/20 hover:bg-primary/5"
+              >
+                <FileText className="mr-2 h-4 w-4 text-primary" /> Gerar Relatório PDF
+              </Button>
+            </div>
+
+            <Card className="shadow-subtle border-primary/20 bg-primary/5 col-span-full">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" /> Budget Optimization Insights (IA)
+                </CardTitle>
+                <CardDescription>
+                  Análise preditiva baseada nos resultados dos últimos 30 dias.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col md:flex-row gap-6 items-center">
+                  <div className="flex-1 space-y-3">
+                    <p className="text-sm text-foreground/80 leading-relaxed">
+                      O canal <strong>Meta Ads</strong> está apresentando um{' '}
+                      <strong>CTR 35% superior</strong> e um <strong>CPA 20% menor</strong> em
+                      comparação ao Google Ads para os formatos de Smart Bundles veiculados este
+                      mês.
+                    </p>
+                    <p className="text-sm font-semibold text-primary bg-primary/10 p-2.5 rounded-lg border border-primary/20 inline-block">
+                      Recomendação: Realocar 15% do orçamento diário do Google Ads para campanhas de
+                      remarketing no Meta Ads.
+                    </p>
+                  </div>
+                  <div className="shrink-0 flex gap-4">
+                    <div className="bg-background border-2 border-primary/30 rounded-xl p-4 text-center shadow-sm w-36 relative overflow-hidden">
+                      <Badge className="absolute -top-1 -right-1 scale-[0.65] bg-success uppercase tracking-widest font-bold">
+                        Top Performer
+                      </Badge>
+                      <p className="text-xs text-muted-foreground mb-1 font-medium">Meta Ads</p>
+                      <p className="font-black text-xl text-primary">3.2% CTR</p>
+                    </div>
+                    <div className="bg-muted/30 border border-transparent rounded-xl p-4 text-center w-36 opacity-80">
+                      <p className="text-xs text-muted-foreground mb-1 font-medium">Google Ads</p>
+                      <p className="font-bold text-xl text-muted-foreground">2.1% CTR</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="shadow-subtle border-primary/20">
                 <CardHeader className="pb-2 flex flex-row items-center justify-between">

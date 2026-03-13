@@ -19,6 +19,8 @@ export type Prompt = {
 export type Client = {
   id: string
   name: string
+  phone?: string
+  notifyWhatsApp?: boolean
   assets: {
     logos: AssetItem<string>[]
     colors: AssetItem<string>[]
@@ -54,6 +56,7 @@ interface AppContextType {
   addPrompt: (p: Omit<Prompt, 'id'>) => void
   clients: Client[]
   updateClientAssets: (id: string, assets: Client['assets']) => void
+  updateClientPreferences: (id: string, phone: string, notifyWhatsApp: boolean) => void
   updateAssetStatus: (
     clientId: string,
     type: 'logos' | 'colors' | 'fonts',
@@ -74,6 +77,8 @@ const defaultClients: Client[] = [
   {
     id: '1',
     name: 'Lojas Renner',
+    phone: '5511999999999',
+    notifyWhatsApp: true,
     assets: {
       logos: [{ value: 'renner-logo-primary.png', status: 'Approved' }],
       colors: [
@@ -87,6 +92,8 @@ const defaultClients: Client[] = [
   {
     id: '2',
     name: 'TechStore',
+    phone: '5511888888888',
+    notifyWhatsApp: false,
     assets: {
       logos: [{ value: 'techstore-main.svg', status: 'Pending' }],
       colors: [
@@ -158,6 +165,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setClients(clients.map((c) => (c.id === id ? { ...c, assets } : c)))
   }
 
+  const updateClientPreferences = (id: string, phone: string, notifyWhatsApp: boolean) => {
+    setClients(clients.map((c) => (c.id === id ? { ...c, phone, notifyWhatsApp } : c)))
+  }
+
   const updateAssetStatus = (
     clientId: string,
     type: 'logos' | 'colors' | 'fonts',
@@ -208,6 +219,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         addPrompt,
         clients,
         updateClientAssets,
+        updateClientPreferences,
         updateAssetStatus,
         uiComponents,
         addUIComponent,

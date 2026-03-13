@@ -68,6 +68,16 @@ const ecoData = [
     feature: 'Branding Library',
     description: 'Saved "Identity Kits" (logos, colors, fonts) per client for instant application.',
   },
+  {
+    category: 'Client & Results',
+    feature: 'WhatsApp Notifications',
+    description: 'Automated alerts with mobile approval links sent directly to clients.',
+  },
+  {
+    category: 'Client & Results',
+    feature: 'Automated PDF Reports',
+    description: 'Generate elegant, print-ready monthly performance summaries with one click.',
+  },
 
   {
     category: 'Automation',
@@ -78,6 +88,11 @@ const ecoData = [
     category: 'Automation',
     feature: 'Mobile Approval',
     description: 'Seamless feedback loop via mobile-optimized share links.',
+  },
+  {
+    category: 'Automation',
+    feature: 'AI Budget Optimization',
+    description: 'Intelligent recommendations for budget reallocation across Meta and Google Ads.',
   },
 ]
 

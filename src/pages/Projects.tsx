@@ -27,7 +27,7 @@ const COLUMNS = [
 
 export default function Projects() {
   const { currentBranch } = useBranch()
-  const { projects } = useAppContext()
+  const { projects, clients } = useAppContext()
   const [activeCard, setActiveCard] = useState<any>(null)
 
   const filteredProjects = projects.filter(
@@ -35,11 +35,24 @@ export default function Projects() {
   )
 
   const handleShare = (id: string) => {
+    const project = projects.find((p) => p.id === id)
+    const client = clients.find((c) => c.name === project?.client)
     const url = `${window.location.origin}/aprovacao-cliente?id=${id}`
+
     navigator.clipboard.writeText(url)
-    toast.success('Link de Aprovação Copiado', {
-      description: 'Link mobile-friendly copiado para a área de transferência.',
-    })
+
+    if (client?.notifyWhatsApp && client?.phone) {
+      const message = `Olá! A arte do projeto "${project?.title}" está pronta para sua avaliação. Acesse o link para revisar e aprovar: ${url}`
+      const waUrl = `https://wa.me/${client.phone}?text=${encodeURIComponent(message)}`
+      window.open(waUrl, '_blank')
+      toast.success('Alerta WhatsApp Disparado', {
+        description: `Mensagem gerada e copiada para o cliente ${client.name}.`,
+      })
+    } else {
+      toast.success('Link de Aprovação Copiado', {
+        description: 'Link mobile-friendly copiado para a área de transferência.',
+      })
+    }
   }
 
   return (
@@ -134,10 +147,10 @@ export default function Projects() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="ml-auto"
+                    className="ml-auto bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
                     onClick={() => handleShare(activeCard.id)}
                   >
-                    <Share2 className="w-4 h-4 mr-2" /> Share for Approval
+                    <Share2 className="w-4 h-4 mr-2" /> Enviar p/ Aprovação
                   </Button>
                 </div>
                 <SheetTitle className="text-2xl">{activeCard.title}</SheetTitle>
