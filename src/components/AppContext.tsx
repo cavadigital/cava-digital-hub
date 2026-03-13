@@ -126,6 +126,7 @@ interface AppContextType {
   attendanceState: 'idle' | 'working' | 'paused'
   lastEntry: Date | null
   myTimeLogs: TimeLog[]
+  addTimeLog: (log: Omit<TimeLog, 'id'>) => void
   teamLogs: TeamLog[]
   setAttendanceRecord: (
     newState: 'idle' | 'working' | 'paused',
@@ -439,6 +440,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ])
   }
 
+  const addTimeLog = (log: Omit<TimeLog, 'id'>) => {
+    setMyTimeLogs((prev) => [{ ...log, id: Math.random().toString(36).substring(2, 9) }, ...prev])
+  }
+
   const requestTimeLogApproval = (id: string) => {
     setMyTimeLogs((prev) => prev.map((l) => (l.id === id ? { ...l, status: 'Pendente' } : l)))
     const log = myTimeLogs.find((l) => l.id === id)
@@ -557,6 +562,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         attendanceState,
         lastEntry,
         myTimeLogs,
+        addTimeLog,
         teamLogs,
         setAttendanceRecord,
         requestTimeLogApproval,

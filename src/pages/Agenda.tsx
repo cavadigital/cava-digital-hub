@@ -15,6 +15,7 @@ import {
   Edit,
   Trash,
   RefreshCw,
+  MessageCircle,
 } from 'lucide-react'
 import { useAppContext, Meeting } from '@/components/AppContext'
 import {
@@ -47,6 +48,8 @@ export default function Agenda() {
     addMeeting,
     updateMeeting,
     deleteMeeting,
+    projects,
+    addTimeLog,
   } = useAppContext()
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
@@ -79,22 +82,36 @@ export default function Agenda() {
   })
 
   const [isSyncing, setIsSyncing] = useState(false)
+  const [isGoogleLoginOpen, setIsGoogleLoginOpen] = useState(false)
+  const [isAiSuggestionsOpen, setIsAiSuggestionsOpen] = useState(false)
 
-  const handleToggleGoogle = () => {
+  const [meetingToConvert, setMeetingToConvert] = useState<Meeting | null>(null)
+  const [logTitle, setLogTitle] = useState('')
+  const [logDuration, setLogDuration] = useState('')
+  const [logProject, setLogProject] = useState('')
+
+  const handleOpenGoogleLogin = () => {
+    if (isGoogleConnected) {
+      toggleGoogleConnection()
+      toast.info('Google Workspace desconectado.', {
+        description: 'Reuniões externas foram ocultadas.',
+      })
+      if (activePreview?.source === 'google') setActivePreview(null)
+    } else {
+      setIsGoogleLoginOpen(true)
+    }
+  }
+
+  const handleGoogleAuth = () => {
+    setIsGoogleLoginOpen(false)
     setIsSyncing(true)
     setTimeout(() => {
       toggleGoogleConnection()
       setIsSyncing(false)
-      if (!isGoogleConnected) {
-        toast.success('Google Workspace conectado!', {
-          description: 'Sincronização bidirecional ativada com sucesso.',
-        })
-      } else {
-        toast.info('Google Workspace desconectado.', {
-          description: 'Reuniões externas foram ocultadas.',
-        })
-      }
-    }, 800)
+      toast.success('Google Workspace conectado!', {
+        description: 'Sincronização bidirecional ativada com sucesso.',
+      })
+    }, 1200)
   }
 
   const handleOpenCreate = () => {
@@ -173,6 +190,96 @@ export default function Agenda() {
     setIsSchedulerOpen(false)
   }
 
+  const handleSimulateWhatsApp = (meet: Meeting) => {
+    toast.success('Lembrete Automático Enviado 🟢', {
+      description: `Mensagem WhatsApp: "Olá! Sua reunião '${meet.title}' começará em 15 minutos às ${meet.time}."`,
+      icon: (
+        <img
+          src="https://img.usecurling.com/i?q=whatsapp&color=green&shape=fill"
+          className="w-5 h-5 mr-1"
+          alt="WA"
+        />
+      ),
+    })
+  }
+
+  const calculateDuration = (start: string, end: string) => {
+    if (!start || !end) return '1h 00m'
+    const [sh, sm] = start.split(':').map(Number)
+    const [eh, em] = end.split(':').map(Number)
+    let diff = eh * 60 + em - (sh * 60 + sm)
+    if (diff <= 0) return '0h 00m'
+    const h = Math.floor(diff / 60)
+    const m = diff % 60
+    return `${h}h ${m.toString().padStart(2, '0')}m`
+  }
+
+  const handleEndMeeting = (meet: Meeting) => {
+    setMeetingToConvert(meet)
+    setLogTitle(meet.title)
+    setLogDuration(calculateDuration(meet.time, meet.endTime))
+    setLogProject('')
+  }
+
+  const handleSaveTimeLog = () => {
+    if (!logProject) {
+      toast.error('Selecione um projeto para associar as horas.')
+      return
+    }
+    addTimeLog({
+      date: new Date().toLocaleDateString('pt-BR'),
+      time: logDuration,
+      type: 'Reunião',
+      project: logProject,
+      status: 'Rascunho',
+    })
+    setMeetingToConvert(null)
+    toast.success('Horas registradas com sucesso!', {
+      description: 'Acesse seu Perfil para solicitar aprovação.',
+    })
+  }
+
+  const mockFreeSlots = [
+    { date: new Date(), dateLabel: 'Hoje', time: '15:30', endTime: '16:30', duration: '1h' },
+    {
+      date: new Date(Date.now() + 86400000),
+      dateLabel: 'Amanhã',
+      time: '10:00',
+      endTime: '11:00',
+      duration: '1h',
+    },
+    {
+      date: new Date(Date.now() + 86400000),
+      dateLabel: 'Amanhã',
+      time: '14:30',
+      endTime: '16:00',
+      duration: '1h 30m',
+    },
+    {
+      date: new Date(Date.now() + 172800000),
+      dateLabel: 'Quinta-feira',
+      time: '09:00',
+      endTime: '10:00',
+      duration: '1h',
+    },
+  ]
+
+  const handleSelectSlot = (slot: any) => {
+    setIsAiSuggestionsOpen(false)
+    setFormData({
+      id: '',
+      title: '',
+      date: slot.date,
+      time: slot.time,
+      endTime: slot.endTime,
+      type: 'Interna',
+      description: 'Reunião sugerida pela IA baseada na sua disponibilidade.',
+      guests: '',
+    })
+    setIsEditing(false)
+    setIsSchedulerOpen(true)
+  }
+
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -182,10 +289,10 @@ export default function Agenda() {
             Gerencie seus compromissos e automatize resumos de reuniões.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant={isGoogleConnected ? 'outline' : 'secondary'}
-            onClick={handleToggleGoogle}
+            onClick={handleOpenGoogleLogin}
             disabled={isSyncing}
             className={
               isGoogleConnected ? 'border-primary/20 hover:bg-primary/5' : 'bg-background shadow-sm'
@@ -204,8 +311,15 @@ export default function Agenda() {
             )}
             {isGoogleConnected ? 'Google Conectado' : 'Conectar Google Workspace'}
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => setIsAiSuggestionsOpen(true)}
+            className="border-primary/20 text-primary hover:bg-primary/5 hidden sm:flex"
+          >
+            <Sparkles className="mr-2 h-4 w-4" /> Sugerir Horários
+          </Button>
           <Button onClick={handleOpenCreate}>
-            <Plus className="mr-2 h-4 w-4" /> Agendar Reunião
+            <Plus className="mr-2 h-4 w-4" /> Agendar
           </Button>
         </div>
       </div>
@@ -387,9 +501,28 @@ export default function Agenda() {
                     </div>
                   </div>
 
-                  <div className="flex justify-end pt-2">
-                    <Button className="shadow-md">
-                      <Plus className="mr-2 h-4 w-4" /> Criar Atividade no Kanban
+                  <div className="flex flex-wrap gap-3 pt-2 border-t mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSimulateWhatsApp(previewMeeting)}
+                      className="bg-background shadow-sm border-green-200 text-green-700 hover:bg-green-50 dark:bg-green-900/10 dark:text-green-400 dark:border-green-800"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Notificar Convidados (WA)
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEndMeeting(previewMeeting)}
+                      className="bg-background shadow-sm border-primary/20 text-primary hover:bg-primary/5"
+                    >
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      Encerrar e Registrar Tempo
+                    </Button>
+                    <div className="flex-1 min-w-[20px]" />
+                    <Button size="sm" className="shadow-md">
+                      <Plus className="mr-2 h-4 w-4" /> Atividade no Kanban
                     </Button>
                   </div>
                 </div>
@@ -529,6 +662,139 @@ export default function Agenda() {
             <Button onClick={handleSave}>
               {isEditing ? 'Salvar Alterações' : 'Confirmar Agendamento'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isGoogleLoginOpen} onOpenChange={setIsGoogleLoginOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <img
+                src="https://img.usecurling.com/i?q=google&color=multicolor&shape=fill"
+                className="w-5 h-5"
+                alt="Google"
+              />
+              Conectar com Google Workspace
+            </DialogTitle>
+            <DialogDescription>
+              Selecione sua conta para permitir que o CAVA Digital acesse e sincronize seu Google
+              Calendar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-6 flex flex-col gap-3">
+            <Button
+              variant="outline"
+              className="h-16 justify-start px-4 hover:bg-muted/50"
+              onClick={handleGoogleAuth}
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-4 text-primary font-bold text-lg shrink-0">
+                A
+              </div>
+              <div className="text-left flex-1 overflow-hidden">
+                <p className="font-semibold text-sm truncate">Admin CAVA</p>
+                <p className="text-xs text-muted-foreground truncate">admin@cavadigital.com.br</p>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-16 justify-start px-4 hover:bg-muted/50"
+              onClick={handleGoogleAuth}
+            >
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mr-4 shrink-0">
+                <Users className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <span className="font-medium text-sm">Usar outra conta</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isAiSuggestionsOpen} onOpenChange={setIsAiSuggestionsOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" /> Sugestões de Horários (IA)
+            </DialogTitle>
+            <DialogDescription>
+              Nossa inteligência analisou sua agenda e encontrou os melhores slots de tempo livre
+              para agendar novos compromissos.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-3 max-h-[300px] overflow-y-auto pr-2">
+            {mockFreeSlots.map((slot, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/40 transition-colors"
+              >
+                <div>
+                  <p className="font-medium text-sm text-foreground flex items-center">
+                    <CalendarIcon className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />{' '}
+                    {slot.dateLabel}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5 ml-5">
+                    {slot.time} - {slot.endTime}{' '}
+                    <span className="opacity-70 ml-1">({slot.duration})</span>
+                  </p>
+                </div>
+                <Button size="sm" variant="secondary" onClick={() => handleSelectSlot(slot)}>
+                  Selecionar
+                </Button>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!meetingToConvert} onOpenChange={(open) => !open && setMeetingToConvert(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-primary" /> Converter em Registro de Horas
+            </DialogTitle>
+            <DialogDescription>
+              Deseja converter o tempo gasto nesta reunião em um registro de horas faturáveis para
+              um projeto?
+            </DialogDescription>
+          </DialogHeader>
+          {meetingToConvert && (
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label>Título da Atividade</Label>
+                <Input value={logTitle} onChange={(e) => setLogTitle(e.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label>Tempo Calculado</Label>
+                <Input value={logDuration} readOnly className="bg-muted font-mono" />
+                <p className="text-[10px] text-muted-foreground">
+                  Extraído automaticamente do convite da reunião ({meetingToConvert.time} às{' '}
+                  {meetingToConvert.endTime}).
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <Label>
+                  Projeto Associado <span className="text-destructive">*</span>
+                </Label>
+                <Select value={logProject} onValueChange={setLogProject}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Selecione um projeto para apontamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((p) => (
+                      <SelectItem key={p.id} value={p.title}>
+                        {p.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMeetingToConvert(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveTimeLog}>Salvar Registro de Horas</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
