@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -9,35 +10,32 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet'
 import { useBranch } from '@/components/BranchContext'
 import { MOCK_EMPLOYEES } from '@/lib/data'
-import { Calculator, UserPlus, Calendar as CalendarIcon } from 'lucide-react'
+import { UserPlus, Clock } from 'lucide-react'
 
 export default function HR() {
   const { currentBranch } = useBranch()
+  const [selectedEmp, setSelectedEmp] = useState<any>(null)
+
   const employees = MOCK_EMPLOYEES.filter(
     (e) => currentBranch === 'Consolidado' || e.branch === currentBranch,
   )
-
-  const calculateTotal = (emp: any) => {
-    if (emp.contract === 'CLT') {
-      return emp.salary + 800 // base + benefícios mockup
-    }
-    if (emp.contract === 'PJ') {
-      return (emp.rate || 0) * (emp.hours || 0)
-    }
-    return 0
-  }
-
-  const totalPayroll = employees.reduce((acc, curr) => acc + calculateTotal(curr), 0)
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gestão de Equipe & RH</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Gestão de Equipe</h1>
           <p className="text-muted-foreground">
-            Controle de ponto, folha e cadastros ({currentBranch}).
+            Acompanhe a atividade, assiduidade e controle de ponto ({currentBranch}).
           </p>
         </div>
         <Button className="bg-foreground text-background hover:bg-foreground/90">
@@ -45,91 +43,145 @@ export default function HR() {
         </Button>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
-        <Card className="shadow-subtle md:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle>Quadro de Colaboradores</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Cargo</TableHead>
-                  <TableHead>Contrato</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {employees.map((emp) => (
-                  <TableRow key={emp.id}>
-                    <TableCell className="font-medium">{emp.name}</TableCell>
-                    <TableCell>{emp.role}</TableCell>
-                    <TableCell>
-                      <Badge variant={emp.contract === 'CLT' ? 'default' : 'secondary'}>
+      <Card className="shadow-subtle">
+        <CardHeader className="flex flex-row items-center justify-between pb-4">
+          <div>
+            <CardTitle>Painel de Produtividade</CardTitle>
+            <CardDescription>Visão em tempo real da equipe ativa.</CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Colaborador</TableHead>
+                <TableHead>Cargo/Contrato</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Assiduidade (Health)</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {employees.map((emp) => (
+                <TableRow key={emp.id} className="hover:bg-muted/50 transition-colors">
+                  <TableCell className="font-medium">
+                    {emp.name}
+                    <div className="text-xs text-muted-foreground mt-0.5">{emp.branch}</div>
+                  </TableCell>
+                  <TableCell>
+                    {emp.role}
+                    <div className="mt-1">
+                      <Badge
+                        variant={emp.contract === 'CLT' ? 'default' : 'outline'}
+                        className="text-[10px]"
+                      >
                         {emp.contract}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">
-                        Ver Perfil
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        emp.status === 'Em Atividade'
+                          ? 'default'
+                          : emp.status === 'Em Pausa'
+                            ? 'secondary'
+                            : 'outline'
+                      }
+                      className={
+                        emp.status === 'Em Atividade'
+                          ? 'bg-success hover:bg-success text-white'
+                          : ''
+                      }
+                    >
+                      {emp.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3 max-w-[140px]">
+                      <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden border">
+                        <div
+                          className={`h-full ${emp.attendanceScore >= 90 ? 'bg-success' : emp.attendanceScore >= 70 ? 'bg-warning' : 'bg-destructive'}`}
+                          style={{ width: `${emp.attendanceScore}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-semibold tabular-nums">
+                        {emp.attendanceScore}%
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedEmp(emp)}>
+                      <Clock className="w-4 h-4 mr-2" /> Ver Ponto
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-        <Card className="shadow-elevation border-primary/20 bg-primary/5 h-fit">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Calculator className="h-5 w-5 text-primary" /> Prévia da Folha
-            </CardTitle>
-            <p className="text-xs text-muted-foreground flex items-center">
-              <CalendarIcon className="w-3 h-3 mr-1" /> Mês de Referência: Outubro
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 bg-background rounded-lg border shadow-sm text-center">
-              <p className="text-sm font-medium text-muted-foreground mb-1">Total Estimado</p>
-              <p className="text-3xl font-bold text-foreground">
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                  totalPayroll,
-                )}
-              </p>
-            </div>
+      <Sheet open={!!selectedEmp} onOpenChange={(open) => !open && setSelectedEmp(null)}>
+        <SheetContent className="sm:max-w-md overflow-y-auto">
+          {selectedEmp && (
+            <>
+              <SheetHeader className="mb-6">
+                <SheetTitle>Gestão de Ponto</SheetTitle>
+                <SheetDescription>Histórico de logs de atividade do usuário.</SheetDescription>
+              </SheetHeader>
+              <div className="space-y-6">
+                <div className="flex items-center gap-4 bg-muted/30 p-4 rounded-xl border shadow-sm">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg shrink-0">
+                    {selectedEmp.name.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-bold text-lg leading-tight">{selectedEmp.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedEmp.role} • {selectedEmp.contract}
+                    </p>
+                  </div>
+                </div>
 
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between p-2 rounded hover:bg-muted/50 transition-colors">
-                <span className="text-muted-foreground">Base CLT (c/ benefícios)</span>
-                <span className="font-medium">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                    employees
-                      .filter((e) => e.contract === 'CLT')
-                      .reduce((a, b) => a + calculateTotal(b), 0),
-                  )}
-                </span>
+                <div>
+                  <h4 className="font-semibold text-sm mb-4 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-muted-foreground" /> Registros Recentes
+                  </h4>
+                  <div className="space-y-3">
+                    {selectedEmp.recentLogs?.map((log: any, i: number) => (
+                      <div
+                        key={i}
+                        className="flex justify-between items-center p-3 border border-border/60 rounded-lg hover:bg-muted/20 transition-colors shadow-sm"
+                      >
+                        <div>
+                          <p className="font-semibold text-sm mb-1">{log.date}</p>
+                          <p className="text-xs text-muted-foreground font-mono">
+                            Entrada: {log.entry} | Saída: {log.exit}
+                          </p>
+                        </div>
+                        <Badge
+                          variant="secondary"
+                          className={
+                            log.hours === 'Em andamento' ? 'bg-success/10 text-success' : ''
+                          }
+                        >
+                          {log.hours}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t flex justify-end">
+                  <Button variant="outline" className="w-full">
+                    Exportar Relatório Completo
+                  </Button>
+                </div>
               </div>
-              <div className="flex justify-between p-2 rounded hover:bg-muted/50 transition-colors">
-                <span className="text-muted-foreground">Prestadores PJ (Horas)</span>
-                <span className="font-medium">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                    employees
-                      .filter((e) => e.contract === 'PJ')
-                      .reduce((a, b) => a + calculateTotal(b), 0),
-                  )}
-                </span>
-              </div>
-            </div>
-
-            <Button className="w-full mt-4" variant="default">
-              Aprovar & Exportar Folha
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

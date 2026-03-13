@@ -30,6 +30,7 @@ import {
   MonitorSmartphone,
   BarChart3,
   BookOpen,
+  User,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
@@ -61,7 +62,7 @@ const navItems = [
   { title: 'Dev Hub', icon: Code2, url: '/devhub' },
   { title: 'Marketing Hub', icon: Megaphone, url: '/marketing' },
   { title: 'Analytics IA', icon: BarChart3, url: '/analytics' },
-  { title: 'RH', icon: Users, url: '/rh' },
+  { title: 'RH & Equipe', icon: Users, url: '/rh' },
 ]
 
 const externalItems = [
@@ -175,6 +176,11 @@ export default function Layout() {
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/perfil" className="w-full cursor-pointer flex items-center">
+                      <User className="mr-2 h-4 w-4" /> Perfil & Produtividade
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link
                       to="/configuracoes/notificacoes"

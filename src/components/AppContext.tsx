@@ -53,6 +53,14 @@ export type Project = {
   description?: string
 }
 
+export type TimeLog = {
+  id: string
+  date: string
+  time: string
+  type: string
+  project?: string
+}
+
 interface AppContextType {
   prompts: Prompt[]
   addPrompt: (p: Omit<Prompt, 'id'>) => void
@@ -74,6 +82,14 @@ interface AppContextType {
   projects: Project[]
   updateProjectStatus: (id: string, status: string) => void
   addProject: (p: Omit<Project, 'id'>) => void
+  attendanceState: 'idle' | 'working' | 'paused'
+  lastEntry: Date | null
+  myTimeLogs: TimeLog[]
+  setAttendanceRecord: (
+    newState: 'idle' | 'working' | 'paused',
+    actionName: string,
+    project?: string,
+  ) => void
 }
 
 const defaultClients: Client[] = [
@@ -162,6 +178,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
   )
   const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS)
 
+  const [attendanceState, setAttendanceState] = useState<'idle' | 'working' | 'paused'>('idle')
+  const [lastEntry, setLastEntry] = useState<Date | null>(null)
+  const [myTimeLogs, setMyTimeLogs] = useState<TimeLog[]>([
+    {
+      id: '1',
+      date: new Date().toLocaleDateString('pt-BR'),
+      time: '08:55',
+      type: 'Entrada',
+      project: '-',
+    },
+  ])
+
+  const setAttendanceRecord = (
+    newState: 'idle' | 'working' | 'paused',
+    actionName: string,
+    project?: string,
+  ) => {
+    const now = new Date()
+    setAttendanceState(newState)
+    setLastEntry(now)
+    setMyTimeLogs((prev) => [
+      {
+        id: Math.random().toString(36).substr(2, 9),
+        date: now.toLocaleDateString('pt-BR'),
+        time: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        type: actionName,
+        project: project || '-',
+      },
+      ...prev,
+    ])
+  }
+
   const addPrompt = (p: Omit<Prompt, 'id'>) => {
     setPrompts([...prompts, { ...p, id: Math.random().toString(36).substr(2, 9) }])
   }
@@ -238,6 +286,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         projects,
         updateProjectStatus,
         addProject,
+        attendanceState,
+        lastEntry,
+        myTimeLogs,
+        setAttendanceRecord,
       }}
     >
       {children}

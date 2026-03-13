@@ -23,6 +23,7 @@ import Analytics from './pages/Analytics'
 import NotificationSettings from './pages/NotificationSettings'
 import ClientApproval from './pages/ClientApproval'
 import Ecosystem from './pages/Ecosystem'
+import Profile from './pages/Profile'
 
 const App = () => (
   <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/portal-cliente" element={<ClientPortal />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/relatorio-executivo" element={<Ecosystem />} />
+              <Route path="/perfil" element={<Profile />} />
               <Route path="/configuracoes/notificacoes" element={<NotificationSettings />} />
             </Route>
             <Route path="*" element={<NotFound />} />

@@ -3,7 +3,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { MOCK_FINANCE, MOCK_AGENDA } from '@/lib/data'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid } from 'recharts'
-import { ArrowUpRight, Clock, Plus, MonitorPlay, Zap, Coffee, LogOut, Play } from 'lucide-react'
+import {
+  ArrowUpRight,
+  Clock,
+  Plus,
+  MonitorPlay,
+  Zap,
+  Coffee,
+  LogOut,
+  Play,
+  AlarmClock,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useBranch } from '@/components/BranchContext'
 import { useAppContext } from '@/components/AppContext'
@@ -38,12 +48,10 @@ const chartData = [
 
 export default function Index() {
   const { currentBranch } = useBranch()
-  const { projects, clients, addProject } = useAppContext()
+  const { projects, clients, addProject, attendanceState, lastEntry, setAttendanceRecord } =
+    useAppContext()
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false)
   const [newProject, setNewProject] = useState({ title: '', client: '', description: '' })
-
-  const [attendanceState, setAttendanceState] = useState<'idle' | 'working' | 'paused'>('idle')
-  const [lastEntry, setLastEntry] = useState<Date | null>(null)
 
   const activeProjects = projects.filter(
     (p) =>
@@ -77,14 +85,24 @@ export default function Index() {
   }
 
   const handlePonto = (newState: 'idle' | 'working' | 'paused', actionName: string) => {
+    setAttendanceRecord(newState, actionName)
     const now = new Date()
-    setAttendanceState(newState)
-    setLastEntry(now)
     toast.success('Ponto registrado com sucesso!', {
       description: `${actionName} às ${now.toLocaleTimeString('pt-BR', {
         hour: '2-digit',
         minute: '2-digit',
       })}`,
+    })
+  }
+
+  const simulateEndOfDay = () => {
+    toast('Alerta de Ponto Esquecido', {
+      description: 'Parece que você esqueceu de bater a saída. Deseja registrar agora?',
+      action: {
+        label: 'Registrar Saída',
+        onClick: () => handlePonto('idle', 'Saída'),
+      },
+      duration: 10000,
     })
   }
 
@@ -121,6 +139,14 @@ export default function Index() {
           )}
           {attendanceState === 'working' && (
             <>
+              <Button
+                variant="outline"
+                className="border-warning text-yellow-600 hover:bg-warning/10 hover:text-yellow-700"
+                onClick={simulateEndOfDay}
+                title="Simular fim de expediente sem bater saída"
+              >
+                <AlarmClock className="mr-2 h-4 w-4" /> Simular 18:00
+              </Button>
               <Button variant="outline" onClick={() => handlePonto('paused', 'Início de Pausa')}>
                 <Coffee className="mr-2 h-4 w-4" /> Pausa
               </Button>

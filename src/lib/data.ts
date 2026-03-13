@@ -89,6 +89,13 @@ export const MOCK_EMPLOYEES = [
     contract: 'CLT',
     salary: 6500,
     branch: 'Curitiba',
+    status: 'Em Atividade',
+    attendanceScore: 98,
+    recentLogs: [
+      { date: 'Hoje', entry: '08:50', exit: '-', hours: 'Em andamento' },
+      { date: 'Ontem', entry: '09:00', exit: '18:00', hours: '8h 00m' },
+      { date: '2 dias atrás', entry: '08:55', exit: '18:10', hours: '8h 15m' },
+    ],
   },
   {
     id: '2',
@@ -98,6 +105,12 @@ export const MOCK_EMPLOYEES = [
     rate: 85,
     hours: 160,
     branch: 'Blumenau',
+    status: 'Offline',
+    attendanceScore: 85,
+    recentLogs: [
+      { date: 'Hoje', entry: '10:00', exit: '16:00', hours: '6h 00m' },
+      { date: 'Ontem', entry: '09:30', exit: '18:30', hours: '8h 00m' },
+    ],
   },
   {
     id: '3',
@@ -106,5 +119,26 @@ export const MOCK_EMPLOYEES = [
     contract: 'CLT',
     salary: 8000,
     branch: 'Curitiba',
+    status: 'Em Pausa',
+    attendanceScore: 92,
+    recentLogs: [
+      { date: 'Hoje', entry: '09:00', exit: '-', hours: 'Pausa (Almoço)' },
+      { date: 'Ontem', entry: '08:45', exit: '18:00', hours: '8h 15m' },
+    ],
   },
+]
+
+export const MOCK_HOURS_PER_PROJECT_WEEK = [
+  { project: 'Implantação Wake', hours: 15 },
+  { project: 'Migração Tray', hours: 10 },
+  { project: 'Campanha Black Friday', hours: 8 },
+  { project: 'Reuniões / Interno', hours: 7 },
+]
+
+export const MOCK_HOURS_PER_PROJECT_MONTH = [
+  { project: 'Implantação Wake', hours: 45 },
+  { project: 'Migração Tray', hours: 30 },
+  { project: 'Campanha Black Friday', hours: 25 },
+  { project: 'Reuniões / Interno', hours: 20 },
+  { project: 'Nova Home Nuvemshop', hours: 40 },
 ]
