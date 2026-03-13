@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAppContext } from '@/components/AppContext'
-import { BarChart3, List, Calendar as CalendarIcon } from 'lucide-react'
+import { BarChart3, List, Calendar as CalendarIcon, Clock } from 'lucide-react'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts'
 import {
@@ -20,7 +20,7 @@ import { MOCK_HOURS_PER_PROJECT_WEEK, MOCK_HOURS_PER_PROJECT_MONTH } from '@/lib
 import { toast } from 'sonner'
 
 export default function Profile() {
-  const { myTimeLogs, attendanceState, requestTimeLogApproval } = useAppContext()
+  const { myTimeLogs, attendanceState, requestTimeLogApproval, weeklyGoal } = useAppContext()
   const [timeView, setTimeView] = useState<'week' | 'month'>('week')
 
   const [startDate, setStartDate] = useState('')
@@ -29,13 +29,18 @@ export default function Profile() {
   const chartData = timeView === 'week' ? MOCK_HOURS_PER_PROJECT_WEEK : MOCK_HOURS_PER_PROJECT_MONTH
   const totalHours = chartData.reduce((acc, curr) => acc + curr.hours, 0)
 
+  const currentGoal = timeView === 'week' ? weeklyGoal : weeklyGoal * 4
+  const balance = totalHours - currentGoal
+  const balanceColor =
+    balance > 0 ? 'text-success' : balance < 0 ? 'text-destructive' : 'text-foreground'
+
   const filteredLogs = myTimeLogs.filter((log) => {
     if (!startDate && !endDate) return true
     return true
   })
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-5xl mx-auto pb-12">
+    <div className="space-y-6 animate-fade-in max-w-6xl mx-auto pb-12">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-6">
         <div className="flex items-center gap-4">
           <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl overflow-hidden shadow-sm border border-primary/20 shrink-0">
@@ -127,7 +132,7 @@ export default function Profile() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-4 gap-6">
             <Card className="shadow-subtle md:col-span-2">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">
@@ -177,11 +182,31 @@ export default function Profile() {
                 <CardTitle className="text-base text-primary">Total Consolidado</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center h-[200px] relative z-10">
-                <div className="text-6xl font-black text-foreground mb-2 tabular-nums">
+                <div className="text-5xl font-black text-foreground mb-2 tabular-nums">
                   {totalHours}h
                 </div>
                 <p className="text-xs text-muted-foreground font-semibold uppercase tracking-widest bg-background/50 px-3 py-1 rounded-full border shadow-sm">
                   {timeView === 'week' ? 'Nesta Semana' : 'Neste Mês'}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-subtle relative overflow-hidden">
+              <div
+                className={`absolute -right-6 -top-6 w-24 h-24 rounded-full blur-2xl opacity-20 ${balance > 0 ? 'bg-success' : balance < 0 ? 'bg-destructive' : 'bg-muted'}`}
+              />
+              <CardHeader className="pb-2 relative z-10">
+                <CardTitle className="text-base text-muted-foreground flex items-center gap-2">
+                  <Clock className="w-4 h-4" /> Banco de Horas
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center justify-center h-[200px] relative z-10">
+                <div className={`text-5xl font-black mb-2 tabular-nums ${balanceColor}`}>
+                  {balance > 0 ? '+' : ''}
+                  {balance}h
+                </div>
+                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-widest bg-muted/50 px-3 py-1 rounded-full border shadow-sm">
+                  Saldo {timeView === 'week' ? 'Semanal' : 'Mensal'}
                 </p>
               </CardContent>
             </Card>
@@ -223,7 +248,7 @@ export default function Profile() {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Projeto Associado</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    <TableHead className="text-right pr-6">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -262,7 +287,7 @@ export default function Profile() {
                             {log.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right pr-6">
                           {log.status === 'Rascunho' && (
                             <Button
                               size="sm"

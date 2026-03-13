@@ -22,6 +22,7 @@ import ClientPortal from './pages/ClientPortal'
 import Analytics from './pages/Analytics'
 import NotificationSettings from './pages/NotificationSettings'
 import ClientApproval from './pages/ClientApproval'
+import ProjectProgress from './pages/ProjectProgress'
 import Ecosystem from './pages/Ecosystem'
 import Profile from './pages/Profile'
 import ExecutiveDashboard from './pages/ExecutiveDashboard'
@@ -35,6 +36,7 @@ const App = () => (
           <Sonner />
           <Routes>
             <Route path="/aprovacao-cliente" element={<ClientApproval />} />
+            <Route path="/projeto/progresso" element={<ProjectProgress />} />
             <Route element={<Layout />}>
               <Route path="/" element={<Index />} />
               <Route path="/projetos" element={<Projects />} />

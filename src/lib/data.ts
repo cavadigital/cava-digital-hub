@@ -101,6 +101,8 @@ export const MOCK_EMPLOYEES = [
     branch: 'Curitiba',
     status: 'Em Atividade',
     attendanceScore: 98,
+    weeklyGoal: 40,
+    workedHours: 42.5,
     recentLogs: [
       {
         date: '2023-11-01',
@@ -124,7 +126,7 @@ export const MOCK_EMPLOYEES = [
         exit: '18:10',
         hours: '8h 15m',
         project: 'Migração Tray',
-        status: 'Aprovado',
+        status: 'Rejeitado',
       },
     ],
   },
@@ -138,6 +140,8 @@ export const MOCK_EMPLOYEES = [
     branch: 'Blumenau',
     status: 'Offline',
     attendanceScore: 85,
+    weeklyGoal: 40,
+    workedHours: 35,
     recentLogs: [
       {
         date: '2023-11-01',
@@ -166,6 +170,8 @@ export const MOCK_EMPLOYEES = [
     branch: 'Curitiba',
     status: 'Em Pausa',
     attendanceScore: 92,
+    weeklyGoal: 40,
+    workedHours: 40,
     recentLogs: [
       {
         date: '2023-11-01',
@@ -173,7 +179,7 @@ export const MOCK_EMPLOYEES = [
         exit: '12:00',
         hours: '3h 00m',
         project: 'Campanha Black Friday',
-        status: 'Aprovado',
+        status: 'Pendente',
       },
       {
         date: '2023-10-31',
@@ -191,7 +197,7 @@ export const MOCK_HOURS_PER_PROJECT_WEEK = [
   { project: 'Implantação Wake', hours: 15 },
   { project: 'Migração Tray', hours: 10 },
   { project: 'Campanha Black Friday', hours: 8 },
-  { project: 'Reuniões / Interno', hours: 7 },
+  { project: 'Reuniões / Interno', hours: 10 },
 ]
 
 export const MOCK_HOURS_PER_PROJECT_MONTH = [

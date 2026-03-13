@@ -107,65 +107,84 @@ export default function HR() {
                       <TableHead>Cargo/Contrato</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Assiduidade (Health)</TableHead>
+                      <TableHead>Banco de Horas</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {employees.map((emp) => (
-                      <TableRow key={emp.id} className="hover:bg-muted/50 transition-colors">
-                        <TableCell className="font-medium">
-                          {emp.name}
-                          <div className="text-xs text-muted-foreground mt-0.5">{emp.branch}</div>
-                        </TableCell>
-                        <TableCell>
-                          {emp.role}
-                          <div className="mt-1">
-                            <Badge
-                              variant={emp.contract === 'CLT' ? 'default' : 'outline'}
-                              className="text-[10px]"
-                            >
-                              {emp.contract}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              emp.status === 'Em Atividade'
-                                ? 'default'
-                                : emp.status === 'Em Pausa'
-                                  ? 'secondary'
-                                  : 'outline'
-                            }
-                            className={
-                              emp.status === 'Em Atividade'
-                                ? 'bg-success hover:bg-success text-white'
-                                : ''
-                            }
-                          >
-                            {emp.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-3 max-w-[140px]">
-                            <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden border">
-                              <div
-                                className={`h-full ${emp.attendanceScore >= 90 ? 'bg-success' : emp.attendanceScore >= 70 ? 'bg-warning' : 'bg-destructive'}`}
-                                style={{ width: `${emp.attendanceScore}%` }}
-                              />
+                    {employees.map((emp) => {
+                      const balance = (emp.workedHours || 0) - (emp.weeklyGoal || 40)
+                      return (
+                        <TableRow key={emp.id} className="hover:bg-muted/50 transition-colors">
+                          <TableCell className="font-medium">
+                            {emp.name}
+                            <div className="text-xs text-muted-foreground mt-0.5">{emp.branch}</div>
+                          </TableCell>
+                          <TableCell>
+                            {emp.role}
+                            <div className="mt-1">
+                              <Badge
+                                variant={emp.contract === 'CLT' ? 'default' : 'outline'}
+                                className="text-[10px]"
+                              >
+                                {emp.contract}
+                              </Badge>
                             </div>
-                            <span className="text-xs font-semibold tabular-nums">
-                              {emp.attendanceScore}%
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" onClick={() => setSelectedEmp(emp)}>
-                            <Clock className="w-4 h-4 mr-2" /> Ver Logs
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                emp.status === 'Em Atividade'
+                                  ? 'default'
+                                  : emp.status === 'Em Pausa'
+                                    ? 'secondary'
+                                    : 'outline'
+                              }
+                              className={
+                                emp.status === 'Em Atividade'
+                                  ? 'bg-success hover:bg-success text-white'
+                                  : ''
+                              }
+                            >
+                              {emp.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-3 max-w-[140px]">
+                              <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden border">
+                                <div
+                                  className={`h-full ${emp.attendanceScore >= 90 ? 'bg-success' : emp.attendanceScore >= 70 ? 'bg-warning' : 'bg-destructive'}`}
+                                  style={{ width: `${emp.attendanceScore}%` }}
+                                />
+                              </div>
+                              <span className="text-xs font-semibold tabular-nums">
+                                {emp.attendanceScore}%
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={
+                                balance > 0
+                                  ? 'bg-success/10 text-success border-success/30 font-semibold'
+                                  : balance < 0
+                                    ? 'bg-destructive/10 text-destructive border-destructive/30 font-semibold'
+                                    : 'bg-muted text-muted-foreground font-semibold'
+                              }
+                            >
+                              {balance > 0 ? '+' : ''}
+                              {balance}h
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm" onClick={() => setSelectedEmp(emp)}>
+                              <Clock className="w-4 h-4 mr-2" /> Ver Logs
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -318,7 +337,7 @@ export default function HR() {
                       {selectedEmp.recentLogs?.map((log: any, i: number) => (
                         <div
                           key={i}
-                          className="flex flex-col gap-2 p-3 border border-border/60 rounded-lg hover:bg-muted/20 transition-colors shadow-sm"
+                          className={`flex flex-col gap-2 p-3 border rounded-lg transition-colors shadow-sm ${log.status === 'Rejeitado' ? 'bg-destructive/5 border-destructive/20 hover:bg-destructive/10' : 'border-border/60 hover:bg-muted/20'}`}
                         >
                           <div className="flex justify-between items-center">
                             <div>
@@ -332,7 +351,9 @@ export default function HR() {
                               className={
                                 log.status === 'Aprovado'
                                   ? 'bg-success/10 text-success border-success/20'
-                                  : ''
+                                  : log.status === 'Rejeitado'
+                                    ? 'bg-destructive/10 text-destructive border-destructive/30'
+                                    : ''
                               }
                             >
                               {log.hours} • {log.status || 'Valido'}

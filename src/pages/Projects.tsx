@@ -19,6 +19,7 @@ import {
   Clock,
   Share2,
   AlertCircle,
+  Link2,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -71,6 +72,14 @@ export default function Projects() {
         description: 'Link mobile-friendly copiado para a área de transferência.',
       })
     }
+  }
+
+  const handleGenerateClientLink = (id: string) => {
+    const url = `${window.location.origin}/projeto/progresso?id=${id}`
+    navigator.clipboard.writeText(url)
+    toast.success('Link de Progresso Gerado', {
+      description: 'URL de acompanhamento restrito copiada para a área de transferência.',
+    })
   }
 
   return (
@@ -196,17 +205,29 @@ export default function Projects() {
           {activeCard && (
             <>
               <SheetHeader className="mb-6">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <Badge>{activeCard.client}</Badge>
                   <Badge variant="outline">{activeCard.status}</Badge>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="ml-auto bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
-                    onClick={() => handleShare(activeCard.id)}
-                  >
-                    <Share2 className="w-4 h-4 mr-2" /> Enviar p/ Aprovação
-                  </Button>
+                  <div className="ml-auto flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-primary/20 text-primary hover:bg-primary/5"
+                      onClick={() => handleGenerateClientLink(activeCard.id)}
+                      title="Gerar link restrito de acompanhamento do projeto"
+                    >
+                      <Link2 className="w-4 h-4 mr-2" /> Visão Cliente
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
+                      onClick={() => handleShare(activeCard.id)}
+                      title="Enviar arte gerada para aprovação do cliente"
+                    >
+                      <Share2 className="w-4 h-4 mr-2" /> Aprovação de Arte
+                    </Button>
+                  </div>
                 </div>
                 <SheetTitle className="text-2xl">{activeCard.title}</SheetTitle>
                 <SheetDescription>
