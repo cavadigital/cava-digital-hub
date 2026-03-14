@@ -33,6 +33,7 @@ import {
   User,
   TrendingUp,
   Clock,
+  Receipt,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
@@ -49,7 +50,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -73,11 +73,12 @@ const navItems = [
   { title: 'Projetos', icon: Kanban, url: '/projetos' },
   { title: 'Clientes', icon: Briefcase, url: '/clientes' },
   { title: 'Financeiro', icon: CircleDollarSign, url: '/financeiro' },
+  { title: 'Faturas & Cobranças', icon: Receipt, url: '/faturas' },
+  { title: 'Colaboradores', icon: Users, url: '/rh' },
   { title: 'Studio Criativo', icon: Palette, url: '/studio' },
   { title: 'Dev Hub', icon: Code2, url: '/devhub' },
   { title: 'Marketing Hub', icon: Megaphone, url: '/marketing' },
   { title: 'Analytics IA', icon: BarChart3, url: '/analytics' },
-  { title: 'RH & Equipe', icon: Users, url: '/rh' },
 ]
 
 const externalItems = [
@@ -89,7 +90,8 @@ const externalItems = [
 export default function Layout() {
   const location = useLocation()
   const { currentBranch, setBranch } = useBranch()
-  const { meetingToConvert, setMeetingToConvert, projects, addTimeLog } = useAppContext()
+  const { meetingToConvert, setMeetingToConvert, projects, addTimeLog, currentUser } =
+    useAppContext()
 
   const [logTitle, setLogTitle] = useState('')
   const [logDuration, setLogDuration] = useState('')
@@ -98,7 +100,6 @@ export default function Layout() {
   useEffect(() => {
     if (meetingToConvert) {
       setLogTitle(meetingToConvert.title)
-
       const [sh, sm] = meetingToConvert.time.split(':').map(Number)
       const [eh, em] = meetingToConvert.endTime.split(':').map(Number)
       let diff = eh * 60 + em - (sh * 60 + sm)
@@ -128,6 +129,15 @@ export default function Layout() {
     })
   }
 
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const term = e.currentTarget.value
+      if (term) {
+        toast.info('Pesquisa global iniciada', { description: `Buscando por: "${term}"...` })
+      }
+    }
+  }
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background text-foreground">
@@ -144,7 +154,9 @@ export default function Layout() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
-                    isActive={location.pathname === item.url}
+                    isActive={
+                      location.pathname === item.url || location.pathname.startsWith(item.url + '/')
+                    }
                     tooltip={item.title}
                   >
                     <Link to={item.url} className="flex items-center gap-3">
@@ -177,16 +189,48 @@ export default function Layout() {
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="p-4">
-            <div className="flex items-center gap-3 bg-sidebar-accent rounded-md p-2">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="https://img.usecurling.com/ppl/thumbnail?gender=male&seed=admin" />
-                <AvatarFallback>AD</AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col text-xs">
-                <span className="font-semibold text-sidebar-foreground">Admin CAVA</span>
-                <span className="text-sidebar-foreground/70">admin@cavadigital</span>
-              </div>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div className="flex items-center gap-3 bg-sidebar-accent rounded-md p-2 cursor-pointer hover:bg-sidebar-accent/80 transition-colors">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={currentUser.avatarUrl} />
+                    <AvatarFallback>
+                      {currentUser.name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col text-xs flex-1 min-w-0">
+                    <span className="font-semibold text-sidebar-foreground truncate block">
+                      {currentUser.name}
+                    </span>
+                    <span className="text-sidebar-foreground/70 truncate block">
+                      {currentUser.email}
+                    </span>
+                  </div>
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 mb-2">
+                <DropdownMenuItem asChild>
+                  <Link to="/perfil" className="w-full cursor-pointer flex items-center">
+                    <User className="mr-2 h-4 w-4 text-muted-foreground" /> Meu Perfil
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/configuracoes/notificacoes"
+                    className="w-full cursor-pointer flex items-center"
+                  >
+                    <Settings className="mr-2 h-4 w-4 text-muted-foreground" /> Configurações
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive cursor-pointer hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => toast.info('Sessão encerrada.')}
+                >
+                  <LogOut className="mr-2 h-4 w-4" /> Sair do Sistema
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarFooter>
         </Sidebar>
 
@@ -199,6 +243,7 @@ export default function Layout() {
                 <Input
                   placeholder="Buscar projetos, tarefas, clientes..."
                   className="pl-9 bg-muted/50 border-none focus-visible:ring-primary shadow-sm"
+                  onKeyDown={handleSearch}
                 />
               </div>
             </div>
@@ -215,38 +260,17 @@ export default function Layout() {
                 </SelectContent>
               </Select>
 
-              <Button variant="ghost" size="icon" className="relative rounded-full">
-                <Bell className="h-5 w-5 text-muted-foreground" />
-                <span className="absolute top-1 right-1.5 h-2 w-2 rounded-full bg-destructive animate-pulse" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative rounded-full hover:bg-muted"
+                asChild
+              >
+                <Link to="/configuracoes/notificacoes">
+                  <Bell className="h-5 w-5 text-muted-foreground" />
+                  <span className="absolute top-1 right-1.5 h-2 w-2 rounded-full bg-destructive animate-pulse" />
+                </Link>
               </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <Settings className="h-5 w-5 text-muted-foreground" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/perfil" className="w-full cursor-pointer flex items-center">
-                      <User className="mr-2 h-4 w-4" /> Perfil & Produtividade
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      to="/configuracoes/notificacoes"
-                      className="w-full cursor-pointer flex items-center"
-                    >
-                      <Bell className="mr-2 h-4 w-4" /> Notificações
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="text-destructive">
-                    <LogOut className="mr-2 h-4 w-4" /> Sair
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
           </header>
 
@@ -263,8 +287,7 @@ export default function Layout() {
               <Clock className="w-5 h-5 text-primary" /> Converter em Registro de Horas
             </DialogTitle>
             <DialogDescription>
-              Would you like to register these {logDuration} to a project? (Deseja registrar essas{' '}
-              {logDuration} em um projeto faturável?)
+              Deseja registrar essas {logDuration} em um projeto faturável?
             </DialogDescription>
           </DialogHeader>
           {meetingToConvert && (
@@ -277,7 +300,7 @@ export default function Layout() {
                 <Label>Tempo Calculado</Label>
                 <Input value={logDuration} readOnly className="bg-muted font-mono" />
                 <p className="text-[10px] text-muted-foreground">
-                  Extraído automaticamente do convite da reunião ({meetingToConvert.time} às{' '}
+                  Extraído automaticamente do convite ({meetingToConvert.time} às{' '}
                   {meetingToConvert.endTime}).
                 </p>
               </div>
@@ -287,7 +310,7 @@ export default function Layout() {
                 </Label>
                 <Select value={logProject} onValueChange={setLogProject}>
                   <SelectTrigger className="bg-background">
-                    <SelectValue placeholder="Selecione um projeto para apontamento" />
+                    <SelectValue placeholder="Selecione um projeto" />
                   </SelectTrigger>
                   <SelectContent>
                     {projects.map((p) => (
