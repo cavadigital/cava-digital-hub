@@ -151,7 +151,7 @@ export default function Finance() {
                     <div className="grid gap-2">
                       <Label>Filial</Label>
                       <Select
-                        value={newTransaction.branch}
+                        value={isGeneralEntry ? 'Consolidado' : newTransaction.branch}
                         onValueChange={(val) =>
                           setNewTransaction({ ...newTransaction, branch: val })
                         }
@@ -161,6 +161,7 @@ export default function Finance() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="Consolidado">Visão Global</SelectItem>
                           <SelectItem value="Blumenau">Blumenau</SelectItem>
                           <SelectItem value="Curitiba">Curitiba</SelectItem>
                         </SelectContent>

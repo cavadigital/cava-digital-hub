@@ -51,6 +51,14 @@ export type NotificationSettings = {
   deployErrorSlack: boolean
 }
 
+export type ProjectComment = {
+  id: string
+  text: string
+  author: string
+  time: string
+  avatar: string
+}
+
 export type Project = {
   id: string
   title: string
@@ -60,6 +68,7 @@ export type Project = {
   description?: string
   estimatedHours?: number
   actualHours?: number
+  comments?: ProjectComment[]
 }
 
 export type TimeLogStatus = 'Rascunho' | 'Pendente' | 'Aprovado' | 'Rejeitado'
@@ -142,6 +151,7 @@ interface AppContextType {
   projects: Project[]
   updateProjectStatus: (id: string, status: string) => void
   addProject: (p: Omit<Project, 'id'>) => void
+  addProjectComment: (projectId: string, comment: ProjectComment) => void
   attendanceState: 'idle' | 'working' | 'paused'
   lastEntry: Date | null
   myTimeLogs: TimeLog[]
@@ -278,7 +288,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(
     defaultNotificationSettings,
   )
-  const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS)
+
+  const [projects, setProjects] = useState<Project[]>(
+    MOCK_PROJECTS.map((p) => ({
+      ...p,
+      comments:
+        p.id === '1'
+          ? [
+              {
+                id: 'c1',
+                text: 'O cliente solicitou uma alteração na banner principal. Link de referência: https://figma.com/file/12345',
+                author: 'Carlos Santos',
+                time: 'Há 2 horas',
+                avatar: 'CA',
+              },
+            ]
+          : [],
+    })),
+  )
 
   const [attendanceState, setAttendanceState] = useState<'idle' | 'working' | 'paused'>('idle')
   const [lastEntry, setLastEntry] = useState<Date | null>(null)
@@ -699,7 +726,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   const addProject = (p: Omit<Project, 'id'>) => {
-    setProjects([...projects, { ...p, id: Math.random().toString(36).substr(2, 9) }])
+    setProjects([...projects, { ...p, id: Math.random().toString(36).substr(2, 9), comments: [] }])
+  }
+
+  const addProjectComment = (projectId: string, comment: ProjectComment) => {
+    setProjects(
+      projects.map((p) => {
+        if (p.id === projectId) {
+          return { ...p, comments: [...(p.comments || []), comment] }
+        }
+        return p
+      }),
+    )
   }
 
   return (
@@ -722,6 +760,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         projects,
         updateProjectStatus,
         addProject,
+        addProjectComment,
         attendanceState,
         lastEntry,
         myTimeLogs,

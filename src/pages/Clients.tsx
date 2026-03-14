@@ -112,9 +112,10 @@ export default function Clients() {
     const newFonts = { ...editedFonts.value, [field]: value }
 
     const families = []
-    if (newFonts.primary) families.push(`family=${newFonts.primary.replace(/\s+/g, '+')}`)
+    if (newFonts.primary)
+      families.push(`family=${newFonts.primary.replace(/\s+/g, '+')}:wght@400;600;700`)
     if (newFonts.secondary && newFonts.secondary !== newFonts.primary) {
-      families.push(`family=${newFonts.secondary.replace(/\s+/g, '+')}`)
+      families.push(`family=${newFonts.secondary.replace(/\s+/g, '+')}:wght@400;600;700`)
     }
 
     let link = ''
@@ -515,7 +516,7 @@ export default function Clients() {
 
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground">
-                        XD Link ou Observações
+                        XD Link / Figma / Referências
                       </Label>
                       <Input
                         value={editedFonts.value.observations || ''}

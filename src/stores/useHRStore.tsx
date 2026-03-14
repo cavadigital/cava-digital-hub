@@ -7,8 +7,6 @@ export type Employee = {
   role: string
   area: string
   integration: 'Google Workspace' | null
-  equipmentCount: number
-  lines: number
   status: 'Ativo' | 'Desligado'
   admissionDate: string
   resignationDate?: string
@@ -39,12 +37,9 @@ export function HRProvider({ children }: { children: ReactNode }) {
       role: 'Desenvolvedor',
       area: 'Implantação',
       integration: 'Google Workspace',
-      equipmentCount: 0,
-      lines: 0,
       status: 'Desligado',
       admissionDate: '2023-01-10',
       resignationDate: '2023-12-01',
-      phoneProfessional: '',
       emailProfessional: 'dev@cavadigital.com.br',
       contractType: 'CLT',
     },
@@ -55,11 +50,8 @@ export function HRProvider({ children }: { children: ReactNode }) {
       role: 'Customer Success',
       area: 'Implantação | Performance',
       integration: 'Google Workspace',
-      equipmentCount: 0,
-      lines: 1,
       status: 'Ativo',
       admissionDate: '2024-02-19',
-      phoneProfessional: '(41) 98486-4181',
       emailProfessional: 'mayara.iaworski@cavadigital.com.br',
       phonePersonal: '(41) 98486-4181',
       emailPersonal: 'mayaraiaworski@icloud.com',
@@ -73,11 +65,8 @@ export function HRProvider({ children }: { children: ReactNode }) {
       role: 'Video Maker',
       area: 'Performance',
       integration: 'Google Workspace',
-      equipmentCount: 0,
-      lines: 2,
       status: 'Ativo',
       admissionDate: '2023-05-15',
-      phoneProfessional: '(41) 99999-1111',
       emailProfessional: 'murillo.miranda@cavadigital.com.br',
       contractType: 'PJ',
     },
@@ -88,8 +77,6 @@ export function HRProvider({ children }: { children: ReactNode }) {
       role: 'Social Media',
       area: 'Performance',
       integration: 'Google Workspace',
-      equipmentCount: 0,
-      lines: 0,
       status: 'Desligado',
       admissionDate: '2023-02-10',
       resignationDate: '2023-10-05',
@@ -103,11 +90,8 @@ export function HRProvider({ children }: { children: ReactNode }) {
       role: 'Marketing Digital',
       area: 'Performance',
       integration: 'Google Workspace',
-      equipmentCount: 0,
-      lines: 1,
       status: 'Ativo',
       admissionDate: '2022-08-01',
-      phoneProfessional: '(41) 98888-2222',
       emailProfessional: 'marketing@cavadigital.com.br',
       contractType: 'CLT',
     },
@@ -118,11 +102,8 @@ export function HRProvider({ children }: { children: ReactNode }) {
       role: 'CTO',
       area: 'Performance',
       integration: 'Google Workspace',
-      equipmentCount: 0,
-      lines: 1,
       status: 'Ativo',
       admissionDate: '2021-03-12',
-      phoneProfessional: '(41) 97777-3333',
       emailProfessional: 'carlos.deodato@cavadigital.com.br',
       contractType: 'Sócio',
     },

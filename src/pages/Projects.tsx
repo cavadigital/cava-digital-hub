@@ -10,7 +10,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { useBranch } from '@/components/BranchContext'
-import { useAppContext } from '@/components/AppContext'
+import { useAppContext, Project } from '@/components/AppContext'
 import {
   Plus,
   MessageSquare,
@@ -51,18 +51,10 @@ const COLUMNS = [
   'Finalizado',
 ]
 
-type Comment = {
-  id: string
-  text: string
-  author: string
-  time: string
-  avatar: string
-}
-
 export default function Projects() {
   const { currentBranch } = useBranch()
-  const { projects, clients, updateProjectStatus, addProject } = useAppContext()
-  const [activeCard, setActiveCard] = useState<any>(null)
+  const { projects, clients, updateProjectStatus, addProject, addProjectComment } = useAppContext()
+  const [activeCard, setActiveCard] = useState<Project | null>(null)
 
   const [draggedItem, setDraggedItem] = useState<string | null>(null)
 
@@ -79,17 +71,6 @@ export default function Projects() {
   })
   const [newChecklistItem, setNewChecklistItem] = useState('')
 
-  const [comments, setComments] = useState<Record<string, Comment[]>>({
-    '1': [
-      {
-        id: 'c1',
-        text: 'O cliente solicitou uma alteração na banner principal. Link de referência: https://figma.com/file/12345',
-        author: 'Carlos Santos',
-        time: 'Há 2 horas',
-        avatar: 'CA',
-      },
-    ],
-  })
   const [newComment, setNewComment] = useState('')
 
   const filteredProjects = projects.filter(
@@ -150,6 +131,9 @@ export default function Projects() {
     const projectId = e.dataTransfer.getData('projectId')
     if (projectId) {
       updateProjectStatus(projectId, status)
+      if (activeCard?.id === projectId) {
+        setActiveCard({ ...activeCard, status })
+      }
     }
     setDraggedItem(null)
   }
@@ -196,19 +180,12 @@ export default function Projects() {
 
   const handleAddComment = () => {
     if (!activeCard || !newComment.trim()) return
-    const currentList = comments[activeCard.id] || []
-    setComments({
-      ...comments,
-      [activeCard.id]: [
-        ...currentList,
-        {
-          id: Math.random().toString(),
-          text: newComment,
-          author: 'Admin CAVA',
-          time: 'Agora',
-          avatar: 'AD',
-        },
-      ],
+    addProjectComment(activeCard.id, {
+      id: Math.random().toString(),
+      text: newComment,
+      author: 'Admin CAVA',
+      time: 'Agora',
+      avatar: 'AD',
     })
     setNewComment('')
   }
@@ -232,6 +209,9 @@ export default function Projects() {
       ),
     )
   }
+
+  // Refresh active card comments from context
+  const activeProjectRefreshed = activeCard ? projects.find((p) => p.id === activeCard.id) : null
 
   return (
     <div className="h-full flex flex-col space-y-6 animate-fade-in">
@@ -310,7 +290,7 @@ export default function Projects() {
                     const ratio = (project.actualHours || 0) / (project.estimatedHours || 1)
                     const isOver = ratio >= 0.8 && project.status !== 'Finalizado'
                     const isDragging = draggedItem === project.id
-                    const commentCount = (comments[project.id] || []).length
+                    const commentCount = (project.comments || []).length
 
                     return (
                       <Card
@@ -431,7 +411,7 @@ export default function Projects() {
 
       <Sheet open={!!activeCard} onOpenChange={(open) => !open && setActiveCard(null)}>
         <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
-          {activeCard && (
+          {activeCard && activeProjectRefreshed && (
             <>
               <SheetHeader className="mb-6">
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -585,7 +565,7 @@ export default function Projects() {
                     <Button onClick={handleAddComment}>Enviar</Button>
                   </div>
                   <div className="mt-4 space-y-4">
-                    {(comments[activeCard.id] || []).map((comment) => (
+                    {(activeProjectRefreshed.comments || []).map((comment) => (
                       <div key={comment.id} className="flex gap-3 text-sm">
                         <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0">
                           {comment.avatar}
@@ -603,7 +583,7 @@ export default function Projects() {
                         </div>
                       </div>
                     ))}
-                    {(comments[activeCard.id] || []).length === 0 && (
+                    {(activeProjectRefreshed.comments || []).length === 0 && (
                       <p className="text-sm text-muted-foreground text-center py-4">
                         Nenhum comentário registrado ainda.
                       </p>

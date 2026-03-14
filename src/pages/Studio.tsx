@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -72,6 +72,21 @@ export default function Studio() {
   const [interactiveColor, setInteractiveColor] = useState('#E3000F')
   const [interactiveText, setInteractiveText] = useState('Comprar Agora')
   const [generatedCode, setGeneratedCode] = useState('')
+
+  useEffect(() => {
+    if (clientId !== 'none') {
+      const client = clients.find((c) => c.id === clientId)
+      if (client?.assets.fonts.value.googleFontLink) {
+        const link = document.createElement('link')
+        link.href = client.assets.fonts.value.googleFontLink
+        link.rel = 'stylesheet'
+        document.head.appendChild(link)
+        return () => {
+          document.head.removeChild(link)
+        }
+      }
+    }
+  }, [clientId, clients])
 
   const handleClientChange = (val: string) => {
     setClientId(val)
@@ -576,17 +591,12 @@ export default function Studio() {
                 <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
                   <Type className="w-3 h-3" /> Tipografia Principal
                 </Label>
-                <Select value={bundleFont} onValueChange={setBundleFont}>
-                  <SelectTrigger className="h-9 text-xs bg-background shadow-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Inter">Inter (Sans)</SelectItem>
-                    <SelectItem value="Montserrat">Montserrat</SelectItem>
-                    <SelectItem value="Playfair Display">Playfair (Serif)</SelectItem>
-                    <SelectItem value="Roboto">Roboto</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  value={bundleFont}
+                  onChange={(e) => setBundleFont(e.target.value)}
+                  className="h-9 text-xs bg-background shadow-sm"
+                  placeholder="Nome da fonte (ex: Roboto)"
+                />
               </div>
             </div>
           </div>
@@ -621,7 +631,10 @@ export default function Studio() {
 
                   {asset.type === 'bundle' ? (
                     <div
-                      style={{ fontFamily: bundleFont, borderColor: currentBorderColor }}
+                      style={{
+                        fontFamily: `"${bundleFont}", sans-serif`,
+                        borderColor: currentBorderColor,
+                      }}
                       className="bg-background rounded-2xl p-8 border-t-8 shadow-elevation transition-all duration-300 w-full"
                     >
                       <h3 className="text-2xl font-bold mb-6">Compre Junto & Economize</h3>
