@@ -93,24 +93,25 @@ export default function Projects() {
 
     if (client?.notifyWhatsApp && client?.phone) {
       const message = `Olá! A arte do projeto "${project?.title}" está pronta para sua avaliação. Acesse o link para revisar e aprovar: ${url}`
-      const waUrl = `https://wa.me/${client.phone}?text=${encodeURIComponent(message)}`
+      const waUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
       window.open(waUrl, '_blank')
       toast.success('Alerta WhatsApp Disparado', {
         description: `Mensagem gerada e copiada para o cliente ${client.name}.`,
       })
     } else {
-      toast.success('Link de Aprovação Copiado', {
-        description: 'Link mobile-friendly copiado para a área de transferência.',
+      window.open(url, '_blank')
+      toast.success('Link de Aprovação Aberto', {
+        description: 'A página de aprovação mobile-friendly foi aberta em uma nova guia.',
       })
     }
   }
 
-  const handleGenerateClientLink = () => {
-    if (!activeCard) return
-    const url = `${window.location.origin}/projeto/progresso?id=${activeCard.id}`
-    navigator.clipboard.writeText(url)
-    toast.success('Link de Progresso Gerado', {
-      description: 'URL de acompanhamento restrito copiada para a área de transferência.',
+  const handleGenerateClientLink = (id: string) => {
+    if (!id) return
+    const url = `${window.location.origin}/projeto/progresso?id=${id}`
+    window.open(url, '_blank')
+    toast.success('Visão Cliente Aberta', {
+      description: 'URL de acompanhamento restrito aberta em uma nova guia.',
     })
   }
 
@@ -184,14 +185,13 @@ export default function Projects() {
             variant="outline"
             onClick={() => {
               if (filteredProjects[0]) {
-                setActiveCard(filteredProjects[0])
-                setTimeout(() => handleGenerateClientLink(), 100)
+                handleGenerateClientLink(filteredProjects[0].id)
               } else {
                 toast.info('Nenhum projeto para visualizar.')
               }
             }}
           >
-            Visão Cliente
+            Visão Cliente (Amostra)
           </Button>
           <Button onClick={() => setIsNewProjectOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> Criar Card
@@ -400,7 +400,7 @@ export default function Projects() {
                       variant="outline"
                       size="sm"
                       className="border-primary/20 text-primary hover:bg-primary/5"
-                      onClick={handleGenerateClientLink}
+                      onClick={() => handleGenerateClientLink(activeCard.id)}
                       title="Gerar link restrito de acompanhamento do projeto"
                     >
                       <Link2 className="w-4 h-4 mr-2" /> Visão Cliente
@@ -476,7 +476,7 @@ export default function Projects() {
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="text-sm font-semibold">Checklist</h4>
+                  <h4 className="text-sm font-semibold">Checklist Infinito</h4>
                   <div className="space-y-2">
                     {(checklists[activeCard.id] || []).map((item, i) => (
                       <div key={i} className="flex items-center gap-2 bg-muted/40 p-2 rounded-md">

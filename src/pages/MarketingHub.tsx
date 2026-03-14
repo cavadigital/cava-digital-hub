@@ -44,8 +44,16 @@ export default function MarketingHub() {
   const [search, setSearch] = useState('')
 
   const handleDownload = (res: any) => {
+    const blob = new Blob(['Conteúdo do recurso: ' + res.title], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${res.title.replace(/\s+/g, '_')}.${res.format.toLowerCase()}`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
     toast.success(`Download iniciado: ${res.title}`, {
-      description: 'O recurso estará disponível na sua pasta de downloads em breve.',
+      description: 'O recurso estará disponível na sua pasta de downloads.',
       icon: <DownloadCloud className="w-5 h-5 text-primary" />,
     })
   }

@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Sheet,
   SheetContent,
@@ -38,18 +39,28 @@ export default function Clients() {
   const { clients, updateClientAssets, updateClientPreferences, addClient } = useAppContext()
   const [search, setSearch] = useState('')
   const [activeClient, setActiveClient] = useState<Client | null>(null)
+  const [editedLogos, setEditedLogos] = useState<AssetItem<string>[]>([])
   const [editedColors, setEditedColors] = useState<AssetItem<string>[]>([])
-  const [editedFonts, setEditedFonts] = useState<AssetItem<{ primary: string; secondary: string }>>(
-    { value: { primary: '', secondary: '' }, status: 'Pending' },
-  )
+  const [editedFonts, setEditedFonts] = useState<
+    AssetItem<{
+      primary: string
+      secondary: string
+      googleFontLink?: string
+      embedCode?: string
+      observations?: string
+    }>
+  >({ value: { primary: '', secondary: '' }, status: 'Pending' })
   const [editedPhone, setEditedPhone] = useState('')
   const [editedNotify, setEditedNotify] = useState(false)
 
   const [isNewBrandKitOpen, setIsNewBrandKitOpen] = useState(false)
   const [newBrandName, setNewBrandName] = useState('')
 
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const handleEdit = (client: Client) => {
     setActiveClient(client)
+    setEditedLogos([...client.assets.logos])
     setEditedColors([...client.assets.colors])
     setEditedFonts({ ...client.assets.fonts })
     setEditedPhone(client.phone || '')
@@ -59,7 +70,7 @@ export default function Clients() {
   const handleSave = () => {
     if (activeClient) {
       updateClientAssets(activeClient.id, {
-        logos: activeClient.assets.logos,
+        logos: editedLogos,
         colors: editedColors,
         fonts: editedFonts,
       })
@@ -87,6 +98,14 @@ export default function Clients() {
     setNewBrandName('')
     setIsNewBrandKitOpen(false)
     toast.success('Novo Brand Kit criado! Você já pode gerenciá-lo.')
+  }
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const url = URL.createObjectURL(e.target.files[0])
+      setEditedLogos([...editedLogos, { value: url, status: 'Pending' }])
+      toast.success('Logo carregado e adicionado à lista.')
+    }
   }
 
   const filteredClients = clients.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
@@ -293,21 +312,46 @@ export default function Clients() {
                       variant="ghost"
                       size="sm"
                       className="h-8 text-xs text-primary"
-                      onClick={() => toast.info('Upload em desenvolvimento.')}
+                      onClick={() => fileInputRef.current?.click()}
                     >
                       <UploadCloud className="w-3 h-3 mr-1" /> Upload
                     </Button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                    />
                   </h4>
                   <div className="flex gap-4 flex-wrap">
-                    {activeClient.assets.logos.length > 0 ? (
-                      activeClient.assets.logos.map((logo, i) => (
+                    {editedLogos.length > 0 ? (
+                      editedLogos.map((logo, i) => (
                         <div key={i} className="flex flex-col gap-1 w-28">
                           <div
-                            className={`h-20 w-full bg-muted border rounded-md flex items-center justify-center relative p-2 text-center ${logo.status === 'Revision Requested' ? 'border-destructive bg-destructive/10' : ''}`}
+                            className={`h-20 w-full bg-muted border rounded-md flex items-center justify-center relative p-2 text-center overflow-hidden ${logo.status === 'Revision Requested' ? 'border-destructive bg-destructive/10' : ''}`}
                           >
-                            <span className="text-[10px] text-muted-foreground font-medium break-all">
-                              {logo.value}
-                            </span>
+                            {logo.value.startsWith('blob:') ? (
+                              <img
+                                src={logo.value}
+                                alt="Logo"
+                                className="max-w-full max-h-full object-contain"
+                              />
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground font-medium break-all">
+                                {logo.value}
+                              </span>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="absolute top-0.5 right-0.5 h-5 w-5 bg-background/80 rounded-full text-muted-foreground hover:text-destructive hover:bg-background"
+                              onClick={() =>
+                                setEditedLogos(editedLogos.filter((_, idx) => idx !== i))
+                              }
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
                             {renderBadge(logo.status)}
                           </div>
                           {logo.feedback && (
@@ -344,7 +388,16 @@ export default function Clients() {
                             }}
                             className="w-6 h-6 rounded cursor-pointer border-0 p-0 bg-transparent"
                           />
-                          <span className="text-xs font-mono uppercase w-16">{color.value}</span>
+                          <Input
+                            value={color.value}
+                            onChange={(e) => {
+                              const newColors = [...editedColors]
+                              newColors[idx] = { value: e.target.value, status: 'Pending' }
+                              setEditedColors(newColors)
+                            }}
+                            className="w-24 h-7 text-xs font-mono uppercase bg-background shadow-none"
+                            placeholder="#000000"
+                          />
                           <Button
                             variant="ghost"
                             size="icon"
@@ -383,18 +436,11 @@ export default function Clients() {
                 {/* Typography Section */}
                 <div className="space-y-3">
                   <h4 className="text-sm font-semibold flex items-center">
-                    <Type className="w-4 h-4 mr-2" /> Tipografia
+                    <Type className="w-4 h-4 mr-2" /> Tipografia e Assets Externos
                   </h4>
                   <div
-                    className={`p-4 rounded-xl border ${editedFonts.status === 'Revision Requested' ? 'border-destructive bg-destructive/5' : 'bg-muted/30'}`}
+                    className={`p-4 rounded-xl border space-y-4 ${editedFonts.status === 'Revision Requested' ? 'border-destructive bg-destructive/5' : 'bg-muted/30'}`}
                   >
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex gap-2 items-center">
-                        <Badge variant="outline" className="text-[10px]">
-                          Status: {editedFonts.status}
-                        </Badge>
-                      </div>
-                    </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">Primária (Títulos)</Label>
@@ -406,6 +452,7 @@ export default function Clients() {
                               status: 'Pending',
                             })
                           }
+                          placeholder="Ex: Inter"
                         />
                       </div>
                       <div className="space-y-2">
@@ -418,9 +465,58 @@ export default function Clients() {
                               status: 'Pending',
                             })
                           }
+                          placeholder="Ex: Roboto"
                         />
                       </div>
                     </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Google Font Link</Label>
+                      <Input
+                        value={editedFonts.value.googleFontLink || ''}
+                        onChange={(e) =>
+                          setEditedFonts({
+                            value: { ...editedFonts.value, googleFontLink: e.target.value },
+                            status: 'Pending',
+                          })
+                        }
+                        placeholder="https://fonts.googleapis.com/css2?family=..."
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">
+                        Embed Code (&lt;link&gt; ou @import)
+                      </Label>
+                      <Textarea
+                        value={editedFonts.value.embedCode || ''}
+                        onChange={(e) =>
+                          setEditedFonts({
+                            value: { ...editedFonts.value, embedCode: e.target.value },
+                            status: 'Pending',
+                          })
+                        }
+                        placeholder="Cole o código de incorporação aqui..."
+                        className="font-mono text-xs min-h-[80px]"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">
+                        XD Link ou Observações
+                      </Label>
+                      <Input
+                        value={editedFonts.value.observations || ''}
+                        onChange={(e) =>
+                          setEditedFonts({
+                            value: { ...editedFonts.value, observations: e.target.value },
+                            status: 'Pending',
+                          })
+                        }
+                        placeholder="Links para UI Kits ou anotações extras..."
+                      />
+                    </div>
+
                     {editedFonts.feedback && (
                       <p className="text-xs text-destructive mt-3 bg-destructive/10 p-2 rounded border border-destructive/20 italic">
                         Feedback do Cliente: "{editedFonts.feedback}"

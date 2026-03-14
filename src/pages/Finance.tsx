@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -29,16 +30,65 @@ import { Switch } from '@/components/ui/switch'
 import { MOCK_FINANCE } from '@/lib/data'
 import { ArrowDownRight, ArrowUpRight, Plus, Download } from 'lucide-react'
 import { useBranch } from '@/components/BranchContext'
+import { toast } from 'sonner'
 
 export default function Finance() {
   const { currentBranch } = useBranch()
 
-  const data = MOCK_FINANCE.filter(
+  const [transactions, setTransactions] = useState(MOCK_FINANCE)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [transactionType, setTransactionType] = useState('Entrada')
+  const [newTransaction, setNewTransaction] = useState({
+    description: '',
+    value: '',
+    branch: 'Blumenau',
+  })
+  const [isGeneralEntry, setIsGeneralEntry] = useState(false)
+
+  const data = transactions.filter(
     (f) => currentBranch === 'Consolidado' || f.branch === currentBranch,
   )
   const receitas = data.filter((f) => f.type === 'Entrada').reduce((a, b) => a + b.value, 0)
   const despesas = data.filter((f) => f.type === 'Saída').reduce((a, b) => a + b.value, 0)
   const saldo = receitas - despesas
+
+  const handleExport = () => {
+    const csvContent =
+      'data:text/csv;charset=utf-8,Data,Descrição,Filial,Valor,Tipo\n' +
+      transactions
+        .map((e) => `${e.date},"${e.description}",${e.branch},${e.value},${e.type}`)
+        .join('\n')
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement('a')
+    link.setAttribute('href', encodedUri)
+    link.setAttribute('download', 'financeiro_cava.csv')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    toast.success('Arquivo CSV exportado com sucesso.')
+  }
+
+  const handleSaveTransaction = () => {
+    if (!newTransaction.description || !newTransaction.value) {
+      toast.error('Preencha a descrição e o valor.')
+      return
+    }
+
+    const newTrx = {
+      id: Math.random().toString(36).substr(2, 9),
+      date: new Date().toISOString().split('T')[0],
+      description: newTransaction.description,
+      type: transactionType,
+      value: parseFloat(newTransaction.value),
+      branch: isGeneralEntry ? 'Consolidado' : newTransaction.branch,
+    }
+
+    setTransactions([newTrx, ...transactions])
+    setIsDialogOpen(false)
+    setNewTransaction({ description: '', value: '', branch: 'Blumenau' })
+    setIsGeneralEntry(false)
+    toast.success('Transação registrada com sucesso!')
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -48,10 +98,10 @@ export default function Finance() {
           <p className="text-muted-foreground">Controle unificado com visão por filial.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" /> Exportar
           </Button>
-          <Dialog>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" /> Nova Transação
@@ -61,12 +111,16 @@ export default function Finance() {
               <DialogHeader>
                 <DialogTitle>Registrar Transação Financeira</DialogTitle>
               </DialogHeader>
-              <Tabs defaultValue="entrada" className="w-full mt-4">
+              <Tabs
+                value={transactionType}
+                onValueChange={setTransactionType}
+                className="w-full mt-4"
+              >
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="entrada" className="data-[state=active]:text-success">
+                  <TabsTrigger value="Entrada" className="data-[state=active]:text-success">
                     Entrada (Receita)
                   </TabsTrigger>
-                  <TabsTrigger value="saida" className="data-[state=active]:text-destructive">
+                  <TabsTrigger value="Saída" className="data-[state=active]:text-destructive">
                     Saída (Despesa)
                   </TabsTrigger>
                 </TabsList>
@@ -74,16 +128,35 @@ export default function Finance() {
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
                     <Label>Descrição</Label>
-                    <Input placeholder="Ex: Mensalidade Cliente X" />
+                    <Input
+                      placeholder="Ex: Mensalidade Cliente X"
+                      value={newTransaction.description}
+                      onChange={(e) =>
+                        setNewTransaction({ ...newTransaction, description: e.target.value })
+                      }
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label>Valor Total (R$)</Label>
-                      <Input type="number" placeholder="0,00" />
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        value={newTransaction.value}
+                        onChange={(e) =>
+                          setNewTransaction({ ...newTransaction, value: e.target.value })
+                        }
+                      />
                     </div>
                     <div className="grid gap-2">
                       <Label>Filial</Label>
-                      <Select defaultValue="Blumenau">
+                      <Select
+                        value={newTransaction.branch}
+                        onValueChange={(val) =>
+                          setNewTransaction({ ...newTransaction, branch: val })
+                        }
+                        disabled={isGeneralEntry}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -95,7 +168,18 @@ export default function Finance() {
                     </div>
                   </div>
 
-                  <TabsContent value="entrada" className="m-0 border-t pt-4 mt-2">
+                  <div className="flex items-center space-x-2 bg-muted/50 p-3 rounded-lg border border-border">
+                    <Switch
+                      id="general-entry"
+                      checked={isGeneralEntry}
+                      onCheckedChange={setIsGeneralEntry}
+                    />
+                    <Label htmlFor="general-entry" className="text-sm font-semibold cursor-pointer">
+                      Entrada Geral (Consolidado)
+                    </Label>
+                  </div>
+
+                  <TabsContent value="Entrada" className="m-0 border-t pt-4 mt-2">
                     <div className="space-y-4">
                       <div className="flex items-center justify-between p-3 bg-muted rounded-lg border">
                         <div className="space-y-0.5">
@@ -135,7 +219,9 @@ export default function Finance() {
                   </TabsContent>
                 </div>
                 <div className="flex justify-end pt-4">
-                  <Button className="w-full sm:w-auto">Salvar Registro</Button>
+                  <Button className="w-full sm:w-auto" onClick={handleSaveTransaction}>
+                    Salvar Registro
+                  </Button>
                 </div>
               </Tabs>
             </DialogContent>
@@ -207,7 +293,7 @@ export default function Finance() {
                   </TableCell>
                   <TableCell className="font-medium">
                     {item.description}
-                    {item.recurring && (
+                    {(item as any).recurring && (
                       <span className="ml-2 text-[10px] bg-muted px-2 py-0.5 rounded uppercase tracking-wider">
                         Recorrente
                       </span>

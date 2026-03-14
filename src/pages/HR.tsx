@@ -12,16 +12,33 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import useHRStore from '@/stores/useHRStore'
 import { Search, Plus, MoreHorizontal, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function HR() {
-  const { employees, syncWithGoogle } = useHRStore()
+  const { employees, syncWithGoogle, addEmployee } = useHRStore()
   const [activeTab, setActiveTab] = useState('Todos')
   const [search, setSearch] = useState('')
   const [isSyncing, setIsSyncing] = useState(false)
+  const [isNewCollabOpen, setIsNewCollabOpen] = useState(false)
+  const [newCollab, setNewCollab] = useState({
+    name: '',
+    emailProfessional: '',
+    role: '',
+    area: '',
+    contractType: 'CLT',
+  })
 
   const handleSync = () => {
     setIsSyncing(true)
@@ -32,6 +49,32 @@ export default function HR() {
         description: 'Dados de colaboradores e fotos foram atualizados do diretório.',
       })
     }, 1500)
+  }
+
+  const handleCreateCollab = () => {
+    if (!newCollab.name || !newCollab.emailProfessional) {
+      toast.error('Preencha os campos obrigatórios.')
+      return
+    }
+
+    addEmployee({
+      id: Math.random().toString(36).substr(2, 9),
+      name: newCollab.name,
+      email: newCollab.emailProfessional,
+      role: newCollab.role,
+      area: newCollab.area,
+      integration: null,
+      equipmentCount: 0,
+      lines: 0,
+      status: 'Ativo',
+      admissionDate: new Date().toISOString().split('T')[0],
+      emailProfessional: newCollab.emailProfessional,
+      contractType: newCollab.contractType,
+    })
+
+    toast.success('Colaborador adicionado com sucesso!')
+    setIsNewCollabOpen(false)
+    setNewCollab({ name: '', emailProfessional: '', role: '', area: '', contractType: 'CLT' })
   }
 
   const filtered = employees.filter((e) => {
@@ -50,7 +93,7 @@ export default function HR() {
             <RefreshCw className={`mr-2 h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} /> Sincronizar
             RH Google
           </Button>
-          <Button onClick={() => toast.info('Adição manual disponível em breve.')}>
+          <Button onClick={() => setIsNewCollabOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> Novo colaborador
           </Button>
         </div>
@@ -178,6 +221,57 @@ export default function HR() {
           </TableBody>
         </Table>
       </Card>
+
+      <Dialog open={isNewCollabOpen} onOpenChange={setIsNewCollabOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo Colaborador</DialogTitle>
+            <DialogDescription>Adicione um membro da equipe manualmente.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nome Completo</Label>
+              <Input
+                value={newCollab.name}
+                onChange={(e) => setNewCollab({ ...newCollab, name: e.target.value })}
+                placeholder="Ex: João da Silva"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>E-mail Profissional</Label>
+              <Input
+                value={newCollab.emailProfessional}
+                onChange={(e) => setNewCollab({ ...newCollab, emailProfessional: e.target.value })}
+                placeholder="joao@cavadigital.com.br"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Cargo</Label>
+                <Input
+                  value={newCollab.role}
+                  onChange={(e) => setNewCollab({ ...newCollab, role: e.target.value })}
+                  placeholder="Ex: Copywriter"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Área</Label>
+                <Input
+                  value={newCollab.area}
+                  onChange={(e) => setNewCollab({ ...newCollab, area: e.target.value })}
+                  placeholder="Ex: Performance"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNewCollabOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateCollab}>Criar Cadastro</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

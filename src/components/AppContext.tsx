@@ -26,7 +26,13 @@ export type Client = {
   assets: {
     logos: AssetItem<string>[]
     colors: AssetItem<string>[]
-    fonts: AssetItem<{ primary: string; secondary: string }>
+    fonts: AssetItem<{
+      primary: string
+      secondary: string
+      googleFontLink?: string
+      embedCode?: string
+      observations?: string
+    }>
   }
 }
 
@@ -192,7 +198,16 @@ const defaultClients: Client[] = [
         { value: '#000000', status: 'Approved' },
         { value: '#FFFFFF', status: 'Approved' },
       ],
-      fonts: { value: { primary: 'Montserrat', secondary: 'Arial' }, status: 'Approved' },
+      fonts: {
+        value: {
+          primary: 'Montserrat',
+          secondary: 'Arial',
+          googleFontLink: 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700',
+          embedCode:
+            "@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700');",
+        },
+        status: 'Approved',
+      },
     },
   },
   {

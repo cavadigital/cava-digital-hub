@@ -15,7 +15,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import useFinanceStore from '@/stores/useFinanceStore'
 import { Receipt, Download, Mail, Plus, X, User, Edit2, List, Cloud } from 'lucide-react'
 import { toast } from 'sonner'
@@ -24,6 +31,8 @@ export default function Invoices() {
   const { invoices, generateBoleto, generateNFSe, addInvoice } = useFinanceStore()
   const [activeTab, setActiveTab] = useState('todas')
   const [isOSOpen, setIsOSOpen] = useState(false)
+  const [isNewClientOpen, setIsNewClientOpen] = useState(false)
+  const [isNewSellerOpen, setIsNewSellerOpen] = useState(false)
 
   const handleSendEmail = (id: string) => {
     toast.success('Documento enviado por E-mail', {
@@ -247,6 +256,70 @@ export default function Invoices() {
         </CardContent>
       </Card>
 
+      <Dialog open={isNewClientOpen} onOpenChange={setIsNewClientOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo Cliente (Financeiro)</DialogTitle>
+            <DialogDescription>Cadastre um novo pagador no sistema.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Razão Social / Nome</Label>
+              <Input placeholder="Empresa XYZ" />
+            </div>
+            <div className="space-y-2">
+              <Label>CNPJ / CPF</Label>
+              <Input placeholder="00.000.000/0000-00" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNewClientOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                setIsNewClientOpen(false)
+                toast.success('Cliente cadastrado!')
+              }}
+            >
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isNewSellerOpen} onOpenChange={setIsNewSellerOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo Vendedor / Representante</DialogTitle>
+            <DialogDescription>Cadastre um novo responsável por comissionamento.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nome do Vendedor</Label>
+              <Input placeholder="Nome Completo" />
+            </div>
+            <div className="space-y-2">
+              <Label>Taxa de Comissão (%)</Label>
+              <Input type="number" placeholder="5" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNewSellerOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                setIsNewSellerOpen(false)
+                toast.success('Vendedor cadastrado!')
+              }}
+            >
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isOSOpen} onOpenChange={setIsOSOpen}>
         <DialogContent className="max-w-[1200px] h-[90vh] flex flex-col p-0 gap-0 bg-[#f8fafc]">
           <DialogHeader className="p-4 bg-white border-b flex-row justify-between items-center shrink-0">
@@ -271,25 +344,31 @@ export default function Invoices() {
                 </div>
                 <div className="flex-1 grid grid-cols-4 gap-x-6 gap-y-4">
                   <div className="col-span-2 space-y-4 pt-2">
-                    <div className="relative">
-                      <Label className="text-[10px] uppercase font-bold tracking-wider text-[#0f766e] bg-white px-1 absolute -top-2 left-3">
+                    <div className="relative flex items-center">
+                      <Label className="text-[10px] uppercase font-bold tracking-wider text-[#0f766e] bg-white px-1 absolute -top-2 left-3 z-10">
                         Cliente
                       </Label>
                       <Input
-                        className="h-10 border-[#14b8a6] rounded-full pl-4"
+                        className="h-10 border-[#14b8a6] rounded-full pl-4 pr-10 relative z-0"
                         placeholder="Pesquisar cliente..."
                       />
-                      <Plus className="absolute right-3 top-3 text-[#14b8a6] w-4 h-4 cursor-pointer" />
+                      <Plus
+                        className="absolute right-3 text-[#14b8a6] w-4 h-4 cursor-pointer z-10"
+                        onClick={() => setIsNewClientOpen(true)}
+                      />
                     </div>
-                    <div className="relative">
-                      <Label className="text-[10px] uppercase font-bold tracking-wider text-gray-400 bg-white px-1 absolute -top-2 left-3">
+                    <div className="relative flex items-center">
+                      <Label className="text-[10px] uppercase font-bold tracking-wider text-gray-400 bg-white px-1 absolute -top-2 left-3 z-10">
                         Vendedor
                       </Label>
                       <Input
-                        className="h-10 border-gray-200 rounded-full pl-4"
+                        className="h-10 border-gray-200 rounded-full pl-4 pr-10 relative z-0"
                         placeholder="Pesquisar vendedor..."
                       />
-                      <Plus className="absolute right-3 top-3 text-gray-400 w-4 h-4 cursor-pointer" />
+                      <Plus
+                        className="absolute right-3 text-gray-400 w-4 h-4 cursor-pointer z-10"
+                        onClick={() => setIsNewSellerOpen(true)}
+                      />
                     </div>
                   </div>
                   <div className="col-span-1 space-y-4 pt-2">
@@ -340,15 +419,7 @@ export default function Invoices() {
                     <span className="text-gray-500 font-medium">Descontos:</span>
                     <span className="font-mono text-gray-700">R$ 0,00</span>
                   </div>
-                  <div className="flex justify-between mb-1.5">
-                    <span className="text-gray-500 font-medium">Despesas Reembolsáveis:</span>
-                    <span className="font-mono text-gray-700">R$ 0,00</span>
-                  </div>
-                  <div className="flex justify-between mb-4 pb-4 border-b border-gray-200">
-                    <span className="text-gray-500 font-medium">Produtos:</span>
-                    <span className="font-mono text-gray-700">R$ 0,00</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-lg">
+                  <div className="flex justify-between font-bold text-lg border-t border-gray-200 pt-4 mt-2">
                     <span className="text-gray-900">Valor Total:</span>
                     <span className="font-mono text-[#0f766e]">R$ 0,00</span>
                   </div>
@@ -363,18 +434,6 @@ export default function Invoices() {
                       className="data-[state=active]:border-b-2 data-[state=active]:border-[#0f766e] rounded-none h-full data-[state=active]:text-[#0f766e] data-[state=active]:shadow-none font-medium px-4 text-gray-500"
                     >
                       Serviço
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="produtos"
-                      className="data-[state=active]:border-b-2 data-[state=active]:border-[#0f766e] rounded-none h-full data-[state=active]:shadow-none font-medium px-4 text-gray-500"
-                    >
-                      Lista de Produtos
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="despesas"
-                      className="data-[state=active]:border-b-2 data-[state=active]:border-[#0f766e] rounded-none h-full data-[state=active]:shadow-none font-medium px-4 text-gray-500"
-                    >
-                      Despesas Reembolsáveis
                     </TabsTrigger>
                     <TabsTrigger
                       value="deptos"
@@ -496,12 +555,6 @@ export default function Invoices() {
                         />
                       </div>
                     </div>
-                  </TabsContent>
-                  <TabsContent value="produtos">
-                    <div className="p-6 text-gray-500 text-sm">Sem produtos.</div>
-                  </TabsContent>
-                  <TabsContent value="despesas">
-                    <div className="p-6 text-gray-500 text-sm">Nenhuma despesa.</div>
                   </TabsContent>
                   <TabsContent value="deptos">
                     <div className="p-6 text-gray-500 text-sm">Departamentos não configurados.</div>

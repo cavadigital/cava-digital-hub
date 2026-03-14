@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,13 @@ import {
   SheetDescription,
   SheetFooter,
 } from '@/components/ui/sheet'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -30,6 +37,7 @@ import {
   ExternalLink,
   MessageCircle,
   AlertTriangle,
+  Loader2,
 } from 'lucide-react'
 import useHRStore from '@/stores/useHRStore'
 import { toast } from 'sonner'
@@ -41,6 +49,10 @@ export default function EmployeeDetail() {
 
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [formData, setFormData] = useState(emp || ({} as any))
+
+  const [isSmsModalOpen, setIsSmsModalOpen] = useState(false)
+  const [smsCodes, setSmsCodes] = useState<{ code: string; time: string }[]>([])
+  const [isReceivingSms, setIsReceivingSms] = useState(false)
 
   if (!emp)
     return <div className="p-8 text-center text-muted-foreground">Colaborador não encontrado.</div>
@@ -69,6 +81,16 @@ export default function EmployeeDetail() {
     if (id) updateEmployee(id, formData)
     setIsEditOpen(false)
     toast.success('Colaborador atualizado com sucesso!')
+  }
+
+  const simulateSmsReception = () => {
+    setIsReceivingSms(true)
+    setTimeout(() => {
+      const newCode = Math.floor(100000 + Math.random() * 900000).toString()
+      setSmsCodes([{ code: newCode, time: new Date().toLocaleTimeString() }, ...smsCodes])
+      setIsReceivingSms(false)
+      toast.success('Novo código recebido!')
+    }, 4000)
   }
 
   return (
@@ -394,48 +416,39 @@ export default function EmployeeDetail() {
                       <Button
                         variant="link"
                         className="h-auto p-0 text-xs text-gray-600 hover:text-gray-900"
+                        onClick={() => {
+                          setIsSmsModalOpen(true)
+                          simulateSmsReception()
+                        }}
                       >
-                        <ExternalLink className="w-3 h-3 mr-1" /> Histórico de mensagens
+                        <ExternalLink className="w-3 h-3 mr-1" /> Ver SMS (Em tempo real)
                       </Button>
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-white border rounded-lg shadow-sm">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-green-50 border border-green-100 rounded-full flex items-center justify-center text-green-600">
-                          <MessageCircle className="w-6 h-6 fill-current" />
+                    {smsCodes.length > 0 && (
+                      <div className="flex items-center justify-between p-4 bg-white border rounded-lg shadow-sm mt-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-green-50 border border-green-100 rounded-full flex items-center justify-center text-green-600">
+                            <MessageCircle className="w-6 h-6 fill-current" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-sm text-foreground">WhatsApp</p>
+                            <p className="text-xs text-muted-foreground">
+                              Último recebido {smsCodes[0].time}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-sm text-foreground">29744</p>
-                          <p className="text-xs text-muted-foreground">WhatsApp Business</p>
+                        <div className="flex gap-2 text-2xl font-mono font-medium text-gray-800">
+                          {smsCodes[0].code.split('').map((digit, i) => (
+                            <span
+                              key={i}
+                              className="bg-white px-3 py-1 rounded shadow-sm border border-gray-200"
+                            >
+                              {digit}
+                            </span>
+                          ))}
                         </div>
                       </div>
-                      <div className="flex gap-2 text-2xl font-mono font-medium text-gray-800">
-                        <span className="bg-white px-3 py-1 rounded shadow-sm border border-gray-200">
-                          7
-                        </span>
-                        <span className="bg-white px-3 py-1 rounded shadow-sm border border-gray-200">
-                          7
-                        </span>
-                        <span className="bg-white px-3 py-1 rounded shadow-sm border border-gray-200">
-                          8
-                        </span>
-                        <span className="text-muted-foreground/50">-</span>
-                        <span className="bg-white px-3 py-1 rounded shadow-sm border border-gray-200">
-                          3
-                        </span>
-                        <span className="bg-white px-3 py-1 rounded shadow-sm border border-gray-200">
-                          1
-                        </span>
-                        <span className="bg-white px-3 py-1 rounded shadow-sm border border-gray-200">
-                          0
-                        </span>
-                      </div>
-                      <Badge
-                        variant="secondary"
-                        className="bg-[#fee2e2] text-[#991b1b] hover:bg-[#fee2e2] border-0 rounded-md font-semibold text-[11px] px-2 py-1"
-                      >
-                        <AlertTriangle className="w-3 h-3 mr-1 fill-current" /> Código expirado
-                      </Badge>
-                    </div>
+                    )}
                   </div>
 
                   <div className="space-y-4 pt-4">
@@ -447,7 +460,7 @@ export default function EmployeeDetail() {
                         Ativado em
                       </span>
                       <span className="text-sm font-mono text-gray-600 tracking-wide">
-                        01/10/2025
+                        {new Date().toLocaleDateString('pt-BR')}
                       </span>
                       <span className="text-sm font-semibold text-right text-muted-foreground mr-6">
                         Tipo do chip
@@ -547,6 +560,53 @@ export default function EmployeeDetail() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      <Dialog open={isSmsModalOpen} onOpenChange={setIsSmsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Caixa de Entrada SMS (Tempo Real)</DialogTitle>
+            <DialogDescription>
+              Aguardando códigos de verificação para o número {formData.phoneProfessional}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-6 min-h-[150px] flex flex-col justify-center border rounded-lg bg-muted/30">
+            {isReceivingSms && smsCodes.length === 0 ? (
+              <div className="flex flex-col items-center text-muted-foreground gap-2">
+                <Loader2 className="w-8 h-8 animate-spin" />
+                <p className="text-sm">Aguardando envio pelo WhatsApp...</p>
+              </div>
+            ) : (
+              <div className="space-y-3 px-4">
+                {smsCodes.map((sms, i) => (
+                  <div
+                    key={i}
+                    className="bg-white p-3 rounded shadow-sm text-sm border flex justify-between"
+                  >
+                    <span>
+                      <strong className="text-primary">{sms.code}</strong> é o seu código de
+                      verificação do WhatsApp Business.
+                    </span>
+                    <span className="text-xs text-muted-foreground">{sms.time}</span>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  className="w-full mt-4"
+                  onClick={simulateSmsReception}
+                  disabled={isReceivingSms}
+                >
+                  {isReceivingSms ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                  )}{' '}
+                  Solicitar Novo Código
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
