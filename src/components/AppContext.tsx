@@ -118,6 +118,7 @@ interface AppContextType {
   prompts: Prompt[]
   addPrompt: (p: Omit<Prompt, 'id'>) => void
   clients: Client[]
+  addClient: (c: Omit<Client, 'id'>) => void
   updateClientAssets: (id: string, assets: Client['assets']) => void
   updateClientPreferences: (id: string, phone: string, notifyWhatsApp: boolean) => void
   updateAssetStatus: (
@@ -627,6 +628,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setPrompts([...prompts, { ...p, id: Math.random().toString(36).substr(2, 9) }])
   }
 
+  const addClient = (c: Omit<Client, 'id'>) => {
+    setClients((prev) => [...prev, { ...c, id: Math.random().toString(36).substr(2, 9) }])
+  }
+
   const updateClientAssets = (id: string, assets: Client['assets']) => {
     setClients(clients.map((c) => (c.id === id ? { ...c, assets } : c)))
   }
@@ -690,6 +695,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         prompts,
         addPrompt,
         clients,
+        addClient,
         updateClientAssets,
         updateClientPreferences,
         updateAssetStatus,

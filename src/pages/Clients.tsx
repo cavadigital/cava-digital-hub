@@ -11,6 +11,14 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useAppContext, Client, AssetItem } from '@/components/AppContext'
 import {
   UploadCloud,
@@ -24,9 +32,10 @@ import {
   MessageSquare,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { toast } from 'sonner'
 
 export default function Clients() {
-  const { clients, updateClientAssets, updateClientPreferences } = useAppContext()
+  const { clients, updateClientAssets, updateClientPreferences, addClient } = useAppContext()
   const [search, setSearch] = useState('')
   const [activeClient, setActiveClient] = useState<Client | null>(null)
   const [editedColors, setEditedColors] = useState<AssetItem<string>[]>([])
@@ -35,6 +44,9 @@ export default function Clients() {
   )
   const [editedPhone, setEditedPhone] = useState('')
   const [editedNotify, setEditedNotify] = useState(false)
+
+  const [isNewBrandKitOpen, setIsNewBrandKitOpen] = useState(false)
+  const [newBrandName, setNewBrandName] = useState('')
 
   const handleEdit = (client: Client) => {
     setActiveClient(client)
@@ -53,7 +65,28 @@ export default function Clients() {
       })
       updateClientPreferences(activeClient.id, editedPhone, editedNotify)
       setActiveClient(null)
+      toast.success('Brand Kit atualizado com sucesso!')
     }
+  }
+
+  const handleCreateBrandKit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newBrandName) {
+      toast.error('Informe o nome do cliente ou marca.')
+      return
+    }
+    addClient({
+      name: newBrandName,
+      healthScore: 100,
+      assets: {
+        logos: [],
+        colors: [{ value: '#000000', status: 'Pending' }],
+        fonts: { value: { primary: 'Inter', secondary: 'Inter' }, status: 'Pending' },
+      },
+    })
+    setNewBrandName('')
+    setIsNewBrandKitOpen(false)
+    toast.success('Novo Brand Kit criado! Você já pode gerenciá-lo.')
   }
 
   const filteredClients = clients.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
@@ -85,14 +118,19 @@ export default function Clients() {
             Gerencie os Kits de Marca (Cores, Fontes e Logos) para uso no Studio Criativo.
           </p>
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar clientes..."
-            className="pl-9 bg-white shadow-sm"
-          />
+        <div className="flex gap-2 w-full sm:w-auto">
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar clientes..."
+              className="pl-9 bg-white shadow-sm"
+            />
+          </div>
+          <Button onClick={() => setIsNewBrandKitOpen(true)} className="shrink-0 shadow-sm">
+            <Plus className="mr-2 h-4 w-4" /> Adicionar Novo
+          </Button>
         </div>
       </div>
 
@@ -125,18 +163,24 @@ export default function Clients() {
               <CardContent>
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex gap-2 flex-wrap">
-                    {client.assets.colors.map((c, i) => (
-                      <div key={i} className="relative">
-                        <div
-                          className="w-4 h-4 rounded-full border border-border"
-                          style={{ backgroundColor: c.value }}
-                          title={c.value}
-                        />
-                        {c.status === 'Revision Requested' && (
-                          <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-destructive" />
-                        )}
-                      </div>
-                    ))}
+                    {client.assets.colors.length > 0 ? (
+                      client.assets.colors.map((c, i) => (
+                        <div key={i} className="relative">
+                          <div
+                            className="w-4 h-4 rounded-full border border-border"
+                            style={{ backgroundColor: c.value }}
+                            title={c.value}
+                          />
+                          {c.status === 'Revision Requested' && (
+                            <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-destructive" />
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">
+                        Sem cores definidas
+                      </span>
+                    )}
                   </div>
                   {client.healthScore !== undefined && (
                     <Badge
@@ -164,6 +208,38 @@ export default function Clients() {
           )
         })}
       </div>
+
+      <Dialog open={isNewBrandKitOpen} onOpenChange={setIsNewBrandKitOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <form onSubmit={handleCreateBrandKit}>
+            <DialogHeader>
+              <DialogTitle>Novo Brand Kit</DialogTitle>
+              <DialogDescription>
+                Adicione uma nova marca para gerenciar seus ativos de design no Studio Criativo.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="brandName">
+                  Nome da Marca / Cliente <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="brandName"
+                  placeholder="Ex: Lojas Renner"
+                  value={newBrandName}
+                  onChange={(e) => setNewBrandName(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsNewBrandKitOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit">Criar Brand Kit</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Sheet open={!!activeClient} onOpenChange={(open) => !open && setActiveClient(null)}>
         <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
@@ -209,27 +285,41 @@ export default function Clients() {
 
                 {/* Logos Section */}
                 <div className="space-y-3">
-                  <h4 className="text-sm font-semibold flex items-center">
-                    <Briefcase className="w-4 h-4 mr-2" /> Logos da Marca
+                  <h4 className="text-sm font-semibold flex items-center justify-between">
+                    <span className="flex items-center">
+                      <Briefcase className="w-4 h-4 mr-2" /> Logos da Marca
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs text-primary"
+                      onClick={() => toast.info('Upload em desenvolvimento.')}
+                    >
+                      <UploadCloud className="w-3 h-3 mr-1" /> Upload
+                    </Button>
                   </h4>
                   <div className="flex gap-4 flex-wrap">
-                    {activeClient.assets.logos.map((logo, i) => (
-                      <div key={i} className="flex flex-col gap-1 w-28">
-                        <div
-                          className={`h-20 w-full bg-muted border rounded-md flex items-center justify-center relative p-2 text-center ${logo.status === 'Revision Requested' ? 'border-destructive bg-destructive/10' : ''}`}
-                        >
-                          <span className="text-[10px] text-muted-foreground font-medium break-all">
-                            {logo.value}
-                          </span>
-                          {renderBadge(logo.status)}
+                    {activeClient.assets.logos.length > 0 ? (
+                      activeClient.assets.logos.map((logo, i) => (
+                        <div key={i} className="flex flex-col gap-1 w-28">
+                          <div
+                            className={`h-20 w-full bg-muted border rounded-md flex items-center justify-center relative p-2 text-center ${logo.status === 'Revision Requested' ? 'border-destructive bg-destructive/10' : ''}`}
+                          >
+                            <span className="text-[10px] text-muted-foreground font-medium break-all">
+                              {logo.value}
+                            </span>
+                            {renderBadge(logo.status)}
+                          </div>
+                          {logo.feedback && (
+                            <span className="text-[10px] text-destructive leading-tight">
+                              "{logo.feedback}"
+                            </span>
+                          )}
                         </div>
-                        {logo.feedback && (
-                          <span className="text-[10px] text-destructive leading-tight">
-                            "{logo.feedback}"
-                          </span>
-                        )}
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Nenhum logo configurado.</p>
+                    )}
                   </div>
                 </div>
 

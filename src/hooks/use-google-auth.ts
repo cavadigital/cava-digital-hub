@@ -70,10 +70,14 @@ export function useGoogleAuth() {
         prompt: 'select_account',
         callback: async (response: any) => {
           if (response.error) {
+            if (response.error === 'popup_closed') {
+              setIsAuthLoading(false)
+              return // User closed it intentionally, no need to show angry error
+            }
             let errorDesc = 'O acesso foi negado ou ocorreu um problema de configuração.'
             if (response.error === 'invalid_client') {
               errorDesc =
-                'Erro 401 (invalid_client): A URL de redirecionamento ou a origem não está autorizada no Google Cloud Console.'
+                'Erro 401 (invalid_client): A URL de redirecionamento ou a origem não está autorizada no Google Cloud Console. Verifique as origens permitidas para cava-digital.goskip.app.'
             }
             toast.error('Erro de Autorização OAuth', { description: errorDesc })
             setIsAuthLoading(false)
@@ -105,7 +109,11 @@ export function useGoogleAuth() {
           }
         },
         error_callback: (error: any) => {
-          toast.error('Erro no fluxo do Google GSI', { description: error.type })
+          if (error?.type === 'popup_closed') {
+            setIsAuthLoading(false)
+            return
+          }
+          toast.error('Erro no fluxo do Google GSI', { description: error.type || 'Desconhecido' })
           setIsAuthLoading(false)
         },
       })

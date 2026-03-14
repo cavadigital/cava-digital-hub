@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -13,7 +13,24 @@ import {
   SheetDescription,
   SheetFooter,
 } from '@/components/ui/sheet'
-import { Edit2, Phone, Hash } from 'lucide-react'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
+import {
+  Edit2,
+  Phone,
+  Hash,
+  Wifi,
+  MessageSquare,
+  PhoneOff,
+  ExternalLink,
+  MessageCircle,
+  AlertTriangle,
+} from 'lucide-react'
 import useHRStore from '@/stores/useHRStore'
 import { toast } from 'sonner'
 
@@ -56,9 +73,22 @@ export default function EmployeeDetail() {
 
   return (
     <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-12">
-      <div className="flex justify-between items-center border-b pb-6">
+      <Breadcrumb className="mb-4">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/rh">Colaboradores</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <span className="font-medium text-foreground">{emp.name}</span>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-6 gap-4">
         <div>
-          <p className="text-sm text-muted-foreground mb-1">Colaboradores / {emp.name}</p>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">{emp.name}</h1>
         </div>
         <Button
@@ -253,14 +283,15 @@ export default function EmployeeDetail() {
       </div>
 
       <Sheet open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <SheetContent className="sm:max-w-xl overflow-y-auto w-full">
-          <SheetHeader className="mb-6">
+        <SheetContent className="sm:max-w-xl overflow-y-auto w-full p-0 flex flex-col">
+          <SheetHeader className="p-6 border-b pb-6 shrink-0 bg-background/95 backdrop-blur z-10 sticky top-0">
             <SheetTitle>Editar Colaborador</SheetTitle>
             <SheetDescription>
               Atualize os dados, contatos e gerencie acessos e telefonia.
             </SheetDescription>
           </SheetHeader>
-          <div className="space-y-8">
+
+          <div className="flex-1 p-6 space-y-8">
             <div className="space-y-4 border-b pb-6">
               <h4 className="font-semibold text-sm">Foto de Perfil (Override do Google)</h4>
               <div className="flex items-center gap-4">
@@ -282,11 +313,9 @@ export default function EmployeeDetail() {
               <h4 className="font-semibold text-sm flex items-center gap-2">
                 <Phone className="w-4 h-4 text-success" /> Telefonia (Linhas Virtuais)
               </h4>
-              <div className="bg-success/5 border border-success/20 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <p className="font-semibold text-sm text-success-foreground mb-1">
-                    Número para WhatsApp
-                  </p>
+                  <p className="font-bold text-sm text-[#166534] mb-1">Número para WhatsApp</p>
                   <p className="text-xs text-muted-foreground mb-2">
                     Linhas ativas:{' '}
                     <strong className="text-foreground">{formData.lines || 0}</strong>
@@ -296,7 +325,7 @@ export default function EmployeeDetail() {
                       {formData.phoneProfessional}
                       <Badge
                         variant="outline"
-                        className="text-[10px] bg-background text-muted-foreground shadow-sm"
+                        className="text-[10px] bg-white text-muted-foreground shadow-sm font-normal"
                       >
                         WhatsApp Web apenas
                       </Badge>
@@ -307,11 +336,131 @@ export default function EmployeeDetail() {
                   variant="outline"
                   size="sm"
                   onClick={handleGenerateWA}
-                  className="shrink-0 bg-background border-success/30 hover:bg-success/10 text-success shadow-sm"
+                  className="shrink-0 bg-white border-[#86efac] hover:bg-[#dcfce3] text-[#166534] shadow-sm font-semibold"
                 >
                   <Hash className="w-4 h-4 mr-2" /> Gerar Nova Linha
                 </Button>
               </div>
+
+              {formData.lines > 0 && (
+                <div className="mt-6 space-y-6 pt-4">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
+                    Saldo Disponível
+                    <span className="ml-2 font-normal normal-case text-[10px]">
+                      Números virtuais não têm dados, SMS ou ligações
+                    </span>
+                  </h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-white border rounded-lg p-3 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full border flex items-center justify-center bg-gray-50 shrink-0">
+                        <Wifi className="w-5 h-5 text-gray-400" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+                          Internet disponível
+                        </span>
+                        <span className="font-bold text-sm">Sem internet</span>
+                      </div>
+                    </div>
+                    <div className="bg-white border rounded-lg p-3 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full border border-pink-200 flex items-center justify-center bg-pink-50 shrink-0">
+                        <MessageSquare className="w-5 h-5 text-pink-500" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+                          SMS disponíveis
+                        </span>
+                        <span className="font-bold text-sm">Somente recebe</span>
+                      </div>
+                    </div>
+                    <div className="bg-white border rounded-lg p-3 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full border flex items-center justify-center bg-gray-50 shrink-0">
+                        <PhoneOff className="w-5 h-5 text-gray-400" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+                          Ligações disponíveis
+                        </span>
+                        <span className="font-bold text-sm">Sem ligações</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 pt-2 border-t">
+                    <div className="flex items-center justify-between">
+                      <h5 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        Confirmação do WhatsApp
+                      </h5>
+                      <Button
+                        variant="link"
+                        className="h-auto p-0 text-xs text-gray-600 hover:text-gray-900"
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" /> Histórico de mensagens
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-white border rounded-lg shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-green-50 border border-green-100 rounded-full flex items-center justify-center text-green-600">
+                          <MessageCircle className="w-6 h-6 fill-current" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm text-foreground">29744</p>
+                          <p className="text-xs text-muted-foreground">WhatsApp Business</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 text-2xl font-mono font-medium text-gray-800">
+                        <span className="bg-white px-3 py-1 rounded shadow-sm border border-gray-200">
+                          7
+                        </span>
+                        <span className="bg-white px-3 py-1 rounded shadow-sm border border-gray-200">
+                          7
+                        </span>
+                        <span className="bg-white px-3 py-1 rounded shadow-sm border border-gray-200">
+                          8
+                        </span>
+                        <span className="text-muted-foreground/50">-</span>
+                        <span className="bg-white px-3 py-1 rounded shadow-sm border border-gray-200">
+                          3
+                        </span>
+                        <span className="bg-white px-3 py-1 rounded shadow-sm border border-gray-200">
+                          1
+                        </span>
+                        <span className="bg-white px-3 py-1 rounded shadow-sm border border-gray-200">
+                          0
+                        </span>
+                      </div>
+                      <Badge
+                        variant="secondary"
+                        className="bg-[#fee2e2] text-[#991b1b] hover:bg-[#fee2e2] border-0 rounded-md font-semibold text-[11px] px-2 py-1"
+                      >
+                        <AlertTriangle className="w-3 h-3 mr-1 fill-current" /> Código expirado
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 pt-4">
+                    <h5 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      Informações da Linha
+                    </h5>
+                    <div className="grid grid-cols-2 gap-y-4 max-w-sm ml-12">
+                      <span className="text-sm font-semibold text-right text-muted-foreground mr-6">
+                        Ativado em
+                      </span>
+                      <span className="text-sm font-mono text-gray-600 tracking-wide">
+                        01/10/2025
+                      </span>
+                      <span className="text-sm font-semibold text-right text-muted-foreground mr-6">
+                        Tipo do chip
+                      </span>
+                      <span className="text-sm text-gray-700">Número virtual</span>
+                      <span className="text-sm font-semibold text-right text-muted-foreground mr-6">
+                        Centro de custo
+                      </span>
+                      <span className="text-sm text-gray-700">-</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid gap-4">
@@ -367,6 +516,8 @@ export default function EmployeeDetail() {
                     onChange={(e) => setFormData({ ...formData, phonePersonal: e.target.value })}
                   />
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label>Data de Admissão</Label>
                   <Input
@@ -375,10 +526,18 @@ export default function EmployeeDetail() {
                     onChange={(e) => setFormData({ ...formData, admissionDate: e.target.value })}
                   />
                 </div>
+                <div className="grid gap-2">
+                  <Label>Data de Desligamento</Label>
+                  <Input
+                    type="date"
+                    value={formData.resignationDate || ''}
+                    onChange={(e) => setFormData({ ...formData, resignationDate: e.target.value })}
+                  />
+                </div>
               </div>
             </div>
           </div>
-          <SheetFooter className="mt-8 pt-6 border-t sticky bottom-0 bg-background z-10">
+          <SheetFooter className="p-6 border-t shrink-0 bg-background z-10 sticky bottom-0">
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>
               Cancelar
             </Button>

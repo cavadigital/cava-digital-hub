@@ -25,6 +25,22 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Progress } from '@/components/ui/progress'
 import { toast } from 'sonner'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 
 const COLUMNS = [
   'Backlog',
@@ -37,8 +53,23 @@ const COLUMNS = [
 
 export default function Projects() {
   const { currentBranch } = useBranch()
-  const { projects, clients } = useAppContext()
+  const { projects, clients, updateProjectStatus, addProject } = useAppContext()
   const [activeCard, setActiveCard] = useState<any>(null)
+
+  const [draggedItem, setDraggedItem] = useState<string | null>(null)
+
+  const [isNewProjectOpen, setIsNewProjectOpen] = useState(false)
+  const [newProject, setNewProject] = useState({ title: '', client: '', description: '' })
+
+  const [checklists, setChecklists] = useState<
+    Record<string, { text: string; checked: boolean }[]>
+  >({
+    '1': [
+      { text: 'Aprovar wireframe', checked: true },
+      { text: 'Configurar DNS', checked: false },
+    ],
+  })
+  const [newChecklistItem, setNewChecklistItem] = useState('')
 
   const filteredProjects = projects.filter(
     (p) => currentBranch === 'Consolidado' || p.branch === currentBranch,
@@ -74,11 +105,70 @@ export default function Projects() {
     }
   }
 
-  const handleGenerateClientLink = (id: string) => {
-    const url = `${window.location.origin}/projeto/progresso?id=${id}`
+  const handleGenerateClientLink = () => {
+    if (!activeCard) return
+    const url = `${window.location.origin}/projeto/progresso?id=${activeCard.id}`
     navigator.clipboard.writeText(url)
     toast.success('Link de Progresso Gerado', {
       description: 'URL de acompanhamento restrito copiada para a área de transferência.',
+    })
+  }
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('projectId', id)
+    setDraggedItem(id)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  const handleDrop = (e: React.DragEvent, status: string) => {
+    e.preventDefault()
+    const projectId = e.dataTransfer.getData('projectId')
+    if (projectId) {
+      updateProjectStatus(projectId, status)
+    }
+    setDraggedItem(null)
+  }
+
+  const handleCreateProject = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newProject.title || !newProject.client) {
+      toast.error('Preencha os campos obrigatórios.')
+      return
+    }
+
+    addProject({
+      title: newProject.title,
+      client: newProject.client,
+      description: newProject.description,
+      status: 'Backlog',
+      branch: currentBranch === 'Consolidado' ? 'Curitiba' : currentBranch,
+    })
+
+    toast.success('Projeto criado com sucesso!')
+    setIsNewProjectOpen(false)
+    setNewProject({ title: '', client: '', description: '' })
+  }
+
+  const handleAddChecklistItem = () => {
+    if (!activeCard || !newChecklistItem.trim()) return
+    const currentList = checklists[activeCard.id] || []
+    setChecklists({
+      ...checklists,
+      [activeCard.id]: [...currentList, { text: newChecklistItem, checked: false }],
+    })
+    setNewChecklistItem('')
+  }
+
+  const handleToggleChecklist = (idx: number) => {
+    if (!activeCard) return
+    const currentList = [...(checklists[activeCard.id] || [])]
+    currentList[idx].checked = !currentList[idx].checked
+    setChecklists({
+      ...checklists,
+      [activeCard.id]: currentList,
     })
   }
 
@@ -90,8 +180,20 @@ export default function Projects() {
           <p className="text-muted-foreground">Gerencie o fluxo de implantações e campanhas.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">Visão Cliente</Button>
-          <Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (filteredProjects[0]) {
+                setActiveCard(filteredProjects[0])
+                setTimeout(() => handleGenerateClientLink(), 100)
+              } else {
+                toast.info('Nenhum projeto para visualizar.')
+              }
+            }}
+          >
+            Visão Cliente
+          </Button>
+          <Button onClick={() => setIsNewProjectOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> Criar Card
           </Button>
         </div>
@@ -130,7 +232,9 @@ export default function Projects() {
           {COLUMNS.map((col) => (
             <div
               key={col}
-              className="w-80 flex flex-col bg-muted/30 rounded-xl p-4 border border-border/50"
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, col)}
+              className="w-80 flex flex-col bg-muted/30 rounded-xl p-4 border border-border/50 transition-colors"
             >
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-semibold text-sm text-foreground/80">{col}</h3>
@@ -145,11 +249,15 @@ export default function Projects() {
                   .map((project) => {
                     const ratio = (project.actualHours || 0) / (project.estimatedHours || 1)
                     const isOver = ratio >= 0.8 && project.status !== 'Finalizado'
+                    const isDragging = draggedItem === project.id
 
                     return (
                       <Card
                         key={project.id}
-                        className={`cursor-pointer transition-colors shadow-subtle group ${isOver ? 'border-warning/50' : 'hover:border-primary/50'}`}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, project.id)}
+                        onDragEnd={() => setDraggedItem(null)}
+                        className={`cursor-pointer transition-all shadow-subtle group ${isOver ? 'border-warning/50' : 'hover:border-primary/50'} ${isDragging ? 'opacity-50 scale-95' : ''}`}
                         onClick={() => setActiveCard(project)}
                       >
                         <CardHeader className="p-4 pb-2">
@@ -191,6 +299,7 @@ export default function Projects() {
                 <Button
                   variant="ghost"
                   className="w-full mt-2 text-muted-foreground hover:text-foreground border border-dashed border-border hover:border-border/80 h-10"
+                  onClick={() => setIsNewProjectOpen(true)}
                 >
                   <Plus className="mr-2 h-4 w-4" /> Adicionar
                 </Button>
@@ -200,6 +309,65 @@ export default function Projects() {
         </div>
       </div>
 
+      <Dialog open={isNewProjectOpen} onOpenChange={setIsNewProjectOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <form onSubmit={handleCreateProject}>
+            <DialogHeader>
+              <DialogTitle>Novo Card / Projeto</DialogTitle>
+              <DialogDescription>Crie uma nova atividade e adicione ao Kanban.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="title">
+                  Nome do Projeto <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="title"
+                  placeholder="Ex: Campanha Dia das Mães"
+                  value={newProject.title}
+                  onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="client">
+                  Cliente <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={newProject.client}
+                  onValueChange={(val) => setNewProject({ ...newProject, client: val })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.name}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="desc">Objetivo/Descrição</Label>
+                <Textarea
+                  id="desc"
+                  placeholder="Descreva brevemente o objetivo..."
+                  value={newProject.description}
+                  onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsNewProjectOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit">Criar Card</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <Sheet open={!!activeCard} onOpenChange={(open) => !open && setActiveCard(null)}>
         <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
           {activeCard && (
@@ -207,13 +375,32 @@ export default function Projects() {
               <SheetHeader className="mb-6">
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <Badge>{activeCard.client}</Badge>
-                  <Badge variant="outline">{activeCard.status}</Badge>
+                  <div className="w-40">
+                    <Select
+                      value={activeCard.status}
+                      onValueChange={(v) => {
+                        updateProjectStatus(activeCard.id, v)
+                        setActiveCard({ ...activeCard, status: v })
+                      }}
+                    >
+                      <SelectTrigger className="h-7 text-xs font-semibold">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COLUMNS.map((c) => (
+                          <SelectItem key={c} value={c}>
+                            {c}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="ml-auto flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       className="border-primary/20 text-primary hover:bg-primary/5"
-                      onClick={() => handleGenerateClientLink(activeCard.id)}
+                      onClick={handleGenerateClientLink}
                       title="Gerar link restrito de acompanhamento do projeto"
                     >
                       <Link2 className="w-4 h-4 mr-2" /> Visão Cliente
@@ -282,27 +469,46 @@ export default function Projects() {
                   <Textarea
                     placeholder="Adicione os detalhes técnicos da implantação aqui..."
                     className="min-h-[100px]"
-                    defaultValue="Revisar arquitetura do checkout na VTEX..."
+                    defaultValue={
+                      activeCard.description || 'Revisar arquitetura do checkout na VTEX...'
+                    }
                   />
                 </div>
 
                 <div className="space-y-2">
                   <h4 className="text-sm font-semibold">Checklist</h4>
                   <div className="space-y-2">
-                    {['Aprovar wireframe', 'Configurar DNS', 'Testes QA'].map((item, i) => (
+                    {(checklists[activeCard.id] || []).map((item, i) => (
                       <div key={i} className="flex items-center gap-2 bg-muted/40 p-2 rounded-md">
                         <input
                           type="checkbox"
-                          className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
-                          defaultChecked={i === 0}
+                          className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                          checked={item.checked}
+                          onChange={() => handleToggleChecklist(i)}
                         />
                         <span
-                          className={`text-sm ${i === 0 ? 'line-through text-muted-foreground' : ''}`}
+                          className={`text-sm ${item.checked ? 'line-through text-muted-foreground' : ''}`}
                         >
-                          {item}
+                          {item.text}
                         </span>
                       </div>
                     ))}
+                    <div className="flex gap-2 mt-2 pt-2">
+                      <Input
+                        placeholder="Adicionar novo item..."
+                        value={newChecklistItem}
+                        onChange={(e) => setNewChecklistItem(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleAddChecklistItem()
+                          }
+                        }}
+                      />
+                      <Button variant="secondary" onClick={handleAddChecklistItem}>
+                        Adicionar
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
