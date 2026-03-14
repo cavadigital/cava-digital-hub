@@ -108,6 +108,28 @@ export default function Clients() {
     }
   }
 
+  const handleFontChange = (field: 'primary' | 'secondary', value: string) => {
+    const newFonts = { ...editedFonts.value, [field]: value }
+
+    const families = []
+    if (newFonts.primary) families.push(`family=${newFonts.primary.replace(/\s+/g, '+')}`)
+    if (newFonts.secondary && newFonts.secondary !== newFonts.primary) {
+      families.push(`family=${newFonts.secondary.replace(/\s+/g, '+')}`)
+    }
+
+    let link = ''
+    let embed = ''
+    if (families.length > 0) {
+      link = `https://fonts.googleapis.com/css2?${families.join('&')}&display=swap`
+      embed = `<link href="${link}" rel="stylesheet">`
+    }
+
+    setEditedFonts({
+      value: { ...newFonts, googleFontLink: link, embedCode: embed },
+      status: 'Pending',
+    })
+  }
+
   const filteredClients = clients.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
 
   const renderBadge = (status: string) => {
@@ -446,12 +468,7 @@ export default function Clients() {
                         <Label className="text-xs text-muted-foreground">Primária (Títulos)</Label>
                         <Input
                           value={editedFonts.value.primary}
-                          onChange={(e) =>
-                            setEditedFonts({
-                              value: { ...editedFonts.value, primary: e.target.value },
-                              status: 'Pending',
-                            })
-                          }
+                          onChange={(e) => handleFontChange('primary', e.target.value)}
                           placeholder="Ex: Inter"
                         />
                       </div>
@@ -459,12 +476,7 @@ export default function Clients() {
                         <Label className="text-xs text-muted-foreground">Secundária (Textos)</Label>
                         <Input
                           value={editedFonts.value.secondary}
-                          onChange={(e) =>
-                            setEditedFonts({
-                              value: { ...editedFonts.value, secondary: e.target.value },
-                              status: 'Pending',
-                            })
-                          }
+                          onChange={(e) => handleFontChange('secondary', e.target.value)}
                           placeholder="Ex: Roboto"
                         />
                       </div>

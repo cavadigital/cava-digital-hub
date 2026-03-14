@@ -51,6 +51,14 @@ const COLUMNS = [
   'Finalizado',
 ]
 
+type Comment = {
+  id: string
+  text: string
+  author: string
+  time: string
+  avatar: string
+}
+
 export default function Projects() {
   const { currentBranch } = useBranch()
   const { projects, clients, updateProjectStatus, addProject } = useAppContext()
@@ -70,6 +78,19 @@ export default function Projects() {
     ],
   })
   const [newChecklistItem, setNewChecklistItem] = useState('')
+
+  const [comments, setComments] = useState<Record<string, Comment[]>>({
+    '1': [
+      {
+        id: 'c1',
+        text: 'O cliente solicitou uma alteração na banner principal. Link de referência: https://figma.com/file/12345',
+        author: 'Carlos Santos',
+        time: 'Há 2 horas',
+        avatar: 'CA',
+      },
+    ],
+  })
+  const [newComment, setNewComment] = useState('')
 
   const filteredProjects = projects.filter(
     (p) => currentBranch === 'Consolidado' || p.branch === currentBranch,
@@ -173,6 +194,45 @@ export default function Projects() {
     })
   }
 
+  const handleAddComment = () => {
+    if (!activeCard || !newComment.trim()) return
+    const currentList = comments[activeCard.id] || []
+    setComments({
+      ...comments,
+      [activeCard.id]: [
+        ...currentList,
+        {
+          id: Math.random().toString(),
+          text: newComment,
+          author: 'Admin CAVA',
+          time: 'Agora',
+          avatar: 'AD',
+        },
+      ],
+    })
+    setNewComment('')
+  }
+
+  const renderTextWithLinks = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g
+    const parts = text.split(urlRegex)
+    return parts.map((part, i) =>
+      urlRegex.test(part) ? (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:underline font-medium"
+        >
+          {part}
+        </a>
+      ) : (
+        <span key={i}>{part}</span>
+      ),
+    )
+  }
+
   return (
     <div className="h-full flex flex-col space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
@@ -250,6 +310,7 @@ export default function Projects() {
                     const ratio = (project.actualHours || 0) / (project.estimatedHours || 1)
                     const isOver = ratio >= 0.8 && project.status !== 'Finalizado'
                     const isDragging = draggedItem === project.id
+                    const commentCount = (comments[project.id] || []).length
 
                     return (
                       <Card
@@ -282,7 +343,7 @@ export default function Projects() {
                         </CardHeader>
                         <CardContent className="p-4 pt-2 flex gap-3 text-muted-foreground">
                           <div className="flex items-center text-xs gap-1">
-                            <MessageSquare className="h-3 w-3" /> 2
+                            <MessageSquare className="h-3 w-3" /> {commentCount}
                           </div>
                           <div className="flex items-center text-xs gap-1">
                             <Paperclip className="h-3 w-3" /> 1
@@ -515,27 +576,38 @@ export default function Projects() {
                 <div className="space-y-2 pt-4 border-t">
                   <h4 className="text-sm font-semibold">Comentários Internos</h4>
                   <div className="flex gap-2">
-                    <Input placeholder="Escreva um comentário..." />
-                    <Button>Enviar</Button>
+                    <Input
+                      placeholder="Escreva um comentário (links são clicáveis)..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                    />
+                    <Button onClick={handleAddComment}>Enviar</Button>
                   </div>
                   <div className="mt-4 space-y-4">
-                    <div className="flex gap-3 text-sm">
-                      <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0">
-                        CA
+                    {(comments[activeCard.id] || []).map((comment) => (
+                      <div key={comment.id} className="flex gap-3 text-sm">
+                        <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0">
+                          {comment.avatar}
+                        </div>
+                        <div className="bg-muted p-3 rounded-lg rounded-tl-none flex-1">
+                          <p className="font-medium mb-1">
+                            {comment.author}{' '}
+                            <span className="text-xs text-muted-foreground font-normal ml-2">
+                              {comment.time}
+                            </span>
+                          </p>
+                          <p className="text-muted-foreground break-words leading-relaxed">
+                            {renderTextWithLinks(comment.text)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="bg-muted p-3 rounded-lg rounded-tl-none flex-1">
-                        <p className="font-medium mb-1">
-                          Carlos Santos{' '}
-                          <span className="text-xs text-muted-foreground font-normal ml-2">
-                            Há 2 horas
-                          </span>
-                        </p>
-                        <p className="text-muted-foreground">
-                          O cliente solicitou uma alteração na banner principal. O arquivo já está
-                          no Studio.
-                        </p>
-                      </div>
-                    </div>
+                    ))}
+                    {(comments[activeCard.id] || []).length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Nenhum comentário registrado ainda.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

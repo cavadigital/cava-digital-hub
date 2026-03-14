@@ -36,7 +36,6 @@ import {
   PhoneOff,
   ExternalLink,
   MessageCircle,
-  AlertTriangle,
   Loader2,
 } from 'lucide-react'
 import useHRStore from '@/stores/useHRStore'
@@ -57,9 +56,9 @@ export default function EmployeeDetail() {
   if (!emp)
     return <div className="p-8 text-center text-muted-foreground">Colaborador não encontrado.</div>
 
-  const admission = new Date(emp.admissionDate)
+  const admission = emp.admissionDate ? new Date(emp.admissionDate) : new Date()
   const diffTime = Math.abs(new Date().getTime() - admission.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 0
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -210,8 +209,10 @@ export default function EmployeeDetail() {
                     Data de admissão
                   </Label>
                   <p className="text-base font-medium mt-1">
-                    {admission.toLocaleDateString('pt-BR')}{' '}
-                    <span className="text-muted-foreground text-sm ml-1">({diffDays} dias)</span>
+                    {emp.admissionDate ? admission.toLocaleDateString('pt-BR') : '-'}
+                    {emp.admissionDate && (
+                      <span className="text-muted-foreground text-sm ml-1">({diffDays} dias)</span>
+                    )}
                   </p>
                 </div>
                 <div>

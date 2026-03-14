@@ -352,10 +352,14 @@ export default function Invoices() {
                         className="h-10 border-[#14b8a6] rounded-full pl-4 pr-10 relative z-0"
                         placeholder="Pesquisar cliente..."
                       />
-                      <Plus
-                        className="absolute right-3 text-[#14b8a6] w-4 h-4 cursor-pointer z-10"
+                      <button
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[#14b8a6] hover:text-[#0d9488] z-10 p-1 cursor-pointer"
                         onClick={() => setIsNewClientOpen(true)}
-                      />
+                        title="Cadastrar Novo Cliente"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
                     </div>
                     <div className="relative flex items-center">
                       <Label className="text-[10px] uppercase font-bold tracking-wider text-gray-400 bg-white px-1 absolute -top-2 left-3 z-10">
@@ -365,10 +369,14 @@ export default function Invoices() {
                         className="h-10 border-gray-200 rounded-full pl-4 pr-10 relative z-0"
                         placeholder="Pesquisar vendedor..."
                       />
-                      <Plus
-                        className="absolute right-3 text-gray-400 w-4 h-4 cursor-pointer z-10"
+                      <button
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 z-10 p-1 cursor-pointer"
                         onClick={() => setIsNewSellerOpen(true)}
-                      />
+                        title="Cadastrar Novo Vendedor"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                   <div className="col-span-1 space-y-4 pt-2">
